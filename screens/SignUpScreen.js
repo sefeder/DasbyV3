@@ -35,16 +35,9 @@ export default class SignUpScreen extends Component {
         this.setState({ buttonLockout: true })
 
         //need signup validation here
-
-        if (!this.state.emailInput) {
-            console.log('Please enter an email')
-            this.setState({
-                buttonLockout: false
-            })
-            return;
-        }
-        if (!this.state.passwordInput) {
-            console.log('Please enter a password')
+        
+        if (!this.state.roleInput) {
+            console.log('Please enter a role')
             this.setState({
                 buttonLockout: false
             })
@@ -64,8 +57,15 @@ export default class SignUpScreen extends Component {
             })
             return;
         }
-        if (!this.state.roleInput) {
-            console.log('Please enter a role')
+        if (!this.state.emailInput) {
+            console.log('Please enter an email')
+            this.setState({
+                buttonLockout: false
+            })
+            return;
+        }
+        if (!this.state.passwordInput) {
+            console.log('Please enter a password')
             this.setState({
                 buttonLockout: false
             })

@@ -342,8 +342,8 @@ export default class UserHomeScreen extends Component {
                     />
                     }
 
-                    {this.state.responseArray.length === 0 ?
-                        <MessageForm channel={this.state.channel} onMessageSend={this.handleNewMessage} /> :
+                    {this.state.responseArray.length !== 0 && this.state.isQrVisible &&
+                        // <MessageForm channel={this.state.channel} onMessageSend={this.handleNewMessage} /> 
                         <QuickReply ref={ref => this.QuickReply = ref} handleNewSurvey={this.handleNewSurvey} onMessageSend={this.handleNewMessage} responseArray={this.state.responseArray} isQrVisible={this.state.isQrVisible}/>
                     }
                     <MenuBar handleNewSurvey={this.handleNewSurvey} navigation={this.props.navigation} screen={'chat'} />

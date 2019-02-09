@@ -37,7 +37,7 @@ export default class AdminSelectionScreen extends Component {
     }
 
     channelButtonHandler = selectedChannel => {
-        AsyncStorage.setItem('currentUserUpi', JSON.stringify(selectedChannel.uniqueName), ()=>{
+        AsyncStorage.setItem('adminSelectedPatientUpi', JSON.stringify(selectedChannel.uniqueName), ()=>{
             this.props.navigation.navigate('AdminChatScreen', { adminInfo: this.state.adminInfo, channelDescriptor: selectedChannel})
         })
     }

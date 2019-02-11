@@ -1,19 +1,30 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, ScrollView, FlatList, Dimensions, AsyncStorage } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'
-import { VictoryBar, VictoryChart, VictoryGroup, VictoryLine, VictoryScatter, VictoryZoomContainer, VictoryVoronoiContainer, VictoryAxis, VictoryStack, VictoryArea } from 'victory-native';
+import { VictoryBar, VictoryChart, VictoryGroup, VictoryLine, VictoryScatter, VictoryZoomContainer, VictoryVoronoiContainer, VictoryAxis, VictoryStack, VictoryArea, createContainer } from 'victory-native';
 import moment from 'moment';
 import 'moment-timezone';
 import Svg from 'react-native-svg'
 
+const VictoryZoomVoronoiContainter = createContainer("zoom", "voronoi");
 
 export default class ResultsGraph extends Component {
 
     state = {
-        dataArray: this.props.dataArray
+        dataArray: [],
+        currentIndex: 0,
+        currentPoints: [],
+        selectedDatum: {},
+        lockedOut: false
     }
 
     componentDidMount() {
+    }
+
+    componentWillReceiveProps(nextProps) {
+        if (nextProps.dataArray !== this.props.dataArray) {
+            this.setState({ dataArray: nextProps.dataArray })
+        }
     }
 
     determineBackgroundColor = severity => {
@@ -40,7 +51,7 @@ export default class ResultsGraph extends Component {
         console.log("down here!")
         let newIndex
         if (points.length > 2 && points[0].eventKey === 1) {
-            newIndex = (this.state.results.length - 1)
+            newIndex = (this.state.dataArray.length - 1)
         } else if (points.length > 2 && points[0].eventKey === 0) {
             newIndex = 0
         } else {
@@ -53,7 +64,7 @@ export default class ResultsGraph extends Component {
             () => {
                 console.log('this.state.currentPoints: ', this.state.currentPoints)
                 console.log('props: ', props)
-                this.highlightPoint(this.props.dataArray, this.state.currentIndex)
+                this.highlightPoint(this.state.dataArray, this.state.currentIndex)
             })
     }
 
@@ -85,17 +96,20 @@ export default class ResultsGraph extends Component {
         return (
             <View style={styles.container}>
                 <VictoryChart
-                    style={{
-                        alignItems: 'stretch'
-                    }}
                     containerComponent={
-                        <VictoryZoomContainer
+                        <VictoryZoomVoronoiContainter
+                            // activateData={false}
+                            // radius={100}
                             allowPan={true}
                             allowZoom={false}
-                            zoomDomain={{ x: [this.props.dataArray.length - 5, this.props.dataArray.length + 0.5] }}
+                            zoomDomain={{ x: [this.state.dataArray.length - 5, this.state.dataArray.length + 0.5] }}
+                            voronoiDimension="x"
+                            onTouchStart={() => this.setState({ lockedOut: true })}
+                            onTouchEnd={() => this.setState({ lockedOut: false })}
+                            onActivated={this.handlePointTouch}
+
                         />
-                    }
-                >
+                    }>
                     <VictoryAxis
                         independentAxis
                         tickFormat={(t) => `${moment(t).format('MM/DD/YY')}`}
@@ -120,31 +134,66 @@ export default class ResultsGraph extends Component {
                             }
                         }}
                     />
-                    <VictoryBar
-                        name="bar"
-                        style={{
-                            data: {
-                                fill: (d) => this.determineBackgroundColor(d.severity),
-                                stroke: 'black'
-                            }
-                        }}
-                        // animate={{
-                        //     duration: 2000
-                        // }}
-                        barWidth={30}
-                        alignment="middle"
-                        domain={{ x: [0, this.props.dataArray.length + 0.5] }}
-                        // barRatio={0.8}
-                        // labels={this.state.results && this.state.results.map((result, idx) => {
-                        //     return `${result.severity}`
-                        // })}
-                        data={this.props.dataArray}
-                        labels={(d) => d.severity === 0 ? 0 : null}
+                    <VictoryStack
+                        disable={true}
+                    >
+                        <VictoryArea
+                            data={[
+                                { x: 0, y: 49 },
+                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 49 },
+                            ]}
+                            style={{ data: { fill: 'rgba(255, 255, 255, 1)' } }} />
+
+                        <VictoryArea
+                            data={[
+                                { x: 0, y: 16 },
+                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 16 },
+                            ]}
+                            style={{ data: { fill: 'rgba(217, 255, 255, 1)' } }} />
+                        <VictoryArea
+                            data={[
+                                { x: 0, y: 10 },
+                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 10 },
+                            ]}
+                            style={{ data: { fill: 'rgba(153, 246, 255, 1)' } }} />
+                        <VictoryArea
+                            data={[
+                                { x: 0, y: 25 },
+                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 25 },
+                            ]}
+                            style={{ data: { fill: 'rgba(83, 178, 222, 1)' } }} />
+                    </VictoryStack>
+                    {this.state.dataArray.length > 0 && <VictoryGroup
+                        disable={true}
+                        width={Dimensions.get('window').width * .96}
+                        data={this.state.dataArray}
                         x="date"
                         y="severity"
-                    />
+                    >
+                        <VictoryLine
+                        />
+                        <VictoryScatter
+                        // style={{
+                        //     data: {
+                        //         fill: (d) => (this.state.currentPoints[0] && d.date === this.state.currentPoints[0].date) ?  "blue" : "grey",
+                        //     }
+                        // }}
+                        />
+                    </VictoryGroup>}
+                    {/* <VictoryGroup>
+                            <VictoryLine
+                                style={{
+                                    data: { stroke: "yellow", strokeWidth: 1 },
+                                    labels: { fill: 'yellow' }
+                                }}
+                                labels={["        avg"]}
+                                data={[
+                                    { x: 0, y: this.state.averageSeverity },
+                                    { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: this.state.averageSeverity }
+                                ]}
+                            />
+                        </VictoryGroup> */}
                 </VictoryChart>
-
             </View>
         )
     }

@@ -71,7 +71,7 @@ class Result extends Component {
                     style={{
                         height: Dimensions.get('window').height * .055
                     }}
-                    underlayColor={this.determineBackgroundColor(this.props.result.severity)}
+                    underlayColor={'rgba(255, 255, 255, 0)'}
                     onPress={() => this.setState({ contentVisible: !this.state.contentVisible })}
                 >
                     <View style={{

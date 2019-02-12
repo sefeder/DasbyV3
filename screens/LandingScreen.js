@@ -1,9 +1,16 @@
 import React, { Component } from 'react';
+import { connect } from "react-redux";
+import { storeUserInfo } from "../redux/actions";
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, AsyncStorage, Image, Dimensions, ImageBackground } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info))
+    };
+}
 
-export default class LandingScreen extends Component {
+class ConnectedLandingScreen extends Component {
 
     state = {
 
@@ -14,11 +21,13 @@ export default class LandingScreen extends Component {
         AsyncStorage.getItem('userInfo', (err, result)=>{
             if (err) console.log(err)
             if (result !== null){
-                console.log('JSON.parse(result): ', JSON.parse(result))
-                if (JSON.parse(result).user.role === 'user'){
-                    this.props.navigation.navigate('UserHomeScreen', {userInfo: JSON.parse(result), newUser: false})
+                const info = JSON.parse(result)
+                console.log('JSON.parse(result): ', info)
+                this.props.storeUserInfo(info.user)
+                if (info.user.role === 'user'){
+                    this.props.navigation.navigate('UserHomeScreen', {userInfo: info, newUser: false})
                 } else {
-                    this.props.navigation.navigate('AdminSelectionScreen', { adminInfo: JSON.parse(result) })
+                    this.props.navigation.navigate('AdminSelectionScreen', { adminInfo: info })
                 }
             } else {
                 setTimeout(()=>{
@@ -78,3 +87,6 @@ const styles = StyleSheet.create({
         fontSize: 70
     },
 });
+
+const LandingScreen = connect(null, mapDispatchToProps)(ConnectedLandingScreen);
+export default LandingScreen;

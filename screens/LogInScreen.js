@@ -1,9 +1,17 @@
 import React, { Component } from 'react';
+import { connect } from "react-redux";
+import { storeUserInfo } from "../redux/actions";
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage} from 'react-native';
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-export default class LogInScreen extends Component {
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info))
+    };
+}
+
+class ConnectedLogInScreen extends Component {
 
     state = {
         emailInput: null,
@@ -33,12 +41,14 @@ export default class LogInScreen extends Component {
                     return;
                 }
                 if (res.user.role === "user"){
+                    this.props.storeUserInfo(res.user)
                     AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
                         this.props.navigation.navigate('UserHomeScreen', {userInfo: res, newUser: false})
                     })
                 }
                 if (res.user.role === "admin"){
                     console.log("succesfully loged in as admin!")
+                    this.props.storeUserInfo(res.user)
                     AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
                         this.props.navigation.navigate('AdminSelectionScreen', { adminInfo: res })
                     })
@@ -183,3 +193,6 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     }
 });
+
+const LogInScreen = connect(null, mapDispatchToProps)(ConnectedLogInScreen);
+export default LogInScreen;

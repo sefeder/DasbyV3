@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, ScrollView, FlatList, Dimensions, AsyncStorage} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { connect } from "react-redux";
+import { storeUserInfo } from "../redux/actions";
 import api from '../utils/api';
 import MenuBar from '../components/MenuBar';
 import moment from 'moment';
@@ -8,9 +10,20 @@ import 'moment-timezone';
 import Result from '../components/Result';
 import ResultsGraph from '../components/ResultsGraph'
 
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info)),
+    };
+}
 
+function mapStateToProps(reduxState) {
+    return {
+        user: reduxState.rootReducer.user,
+        patientUpi: reduxState.rootReducer.selectedPatientUpi
+    };
+}
 
-    export default class ResultsScreen extends Component {
+class ConnectedResultsScreen extends Component {
         
     state = {
         results: null,
@@ -27,18 +40,25 @@ import ResultsGraph from '../components/ResultsGraph'
     }
 
     adminOrUser = () => {
-        AsyncStorage.getItem('adminSelectedPatientUpi', (err, result) => {
-            if (err) console.log(err)
+        if (this.props.patientUpi !== undefined) {
             //if admin is currently logged in
-            if (result !== null) {
-                this.getAndSetResults(JSON.parse(result))
-            //else user is logged in
-            } else {
-                AsyncStorage.getItem('userInfo', (err, result) => {
-                    this.getAndSetResults(JSON.parse(result).user.upi)
-                })
-            }
-        })  
+            this.getAndSetResults(this.props.patientUpi)
+        } else {
+             //else user is logged in
+            this.getAndSetResults(this.props.user.upi)
+        }
+        // AsyncStorage.getItem('adminSelectedPatientUpi', (err, result) => {
+        //     if (err) console.log(err)
+        //     //if admin is currently logged in
+        //     if (result !== null) {
+        //         this.getAndSetResults(JSON.parse(result))
+        //     //else user is logged in
+        //     } else {
+        //         AsyncStorage.getItem('userInfo', (err, result) => {
+        //             this.getAndSetResults(JSON.parse(result).user.upi)
+        //         })
+        //     }
+        // })  
     }
 
     getAndSetResults = (patientUpi) => {
@@ -119,3 +139,6 @@ const styles = StyleSheet.create({
     }
 
 });
+
+const ResultsScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedResultsScreen);
+export default ResultsScreen;

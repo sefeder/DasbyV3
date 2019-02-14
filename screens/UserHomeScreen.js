@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, Dimensions, AsyncStorage } from 'react-native';
+import { connect } from "react-redux";
+import { storeUserInfo, storeDasbyUpi, storeUserPrivateKey } from "../redux/actions";
 import twilio from '../utils/twilioUtil';
 import { VirgilCrypto } from 'virgil-crypto';
 import MessageForm from '../components/MessageForm';
@@ -10,30 +12,38 @@ import QuickReply from '../components/QuickReply';
 import Spinner from 'react-native-loading-spinner-overlay';
 import MenuBar from '../components/MenuBar';
 
-export default class UserHomeScreen extends Component {
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info)),
+        storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
+        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey))
+    };
+}
+
+function mapStateToProps(reduxState) {
+    return {
+        dasbyUpi: reduxState.rootReducer.dasbyUpi,
+        user: reduxState.rootReducer.user,
+        userPrivateKey: reduxState.rootReducer.userPrivateKey,
+        storedMessages: reduxState.rootReducer.user.messages,
+        storedMemberArray: reduxState.rootReducer.user.memberArray
+    };
+}
+
+class ConnectedUserHomeScreen extends Component {
 
     state = {
         //when you get to this page straight from a sign up (not a log in) object below has a private_key that is null
-        userInfo: this.props.navigation.state.params.userInfo.user,
-        newUser: this.props.navigation.state.params.newUser,
         channel: null,
         userPrivateKey: null,
         messages: [],
         memberArray: [],
-        DasbyUpi: null,
         responseArray: [],
         isTyping: false,
         memberTyping: null,
         isQrVisible: true,
-        spinnerVisible: true
-    }
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.navigation.state.params.userInfo.user !== this.props.navigation.state.params.userInfo.user) {
-            this.setState({ userInfo: nextProps.navigation.state.params.userInfo.user})
-        }
-        if (nextProps.navigation.state.params.newUser !== this.props.navigation.state.params.newUser) {
-            this.setState({ newUser: nextProps.navigation.state.params.newUser})
-        }
+        spinnerVisible: true,
+        newestStoredMessageIndex: 0
     }
 
     componentDidMount() {
@@ -46,34 +56,27 @@ export default class UserHomeScreen extends Component {
                 this.setState({ responseArray: JSON.parse(responses).responseArray, isQrVisible: JSON.parse(responses).isQrVisible}) 
             } 
         })
-        virgil.getPrivateKey(this.state.userInfo.upi)
-            .then(userPrivateKey => {
-                console.log("Virgil Private Key Retrieved: ", (Date.now() - startTime) / 1000)
-                this.setState({
-                    userPrivateKey: userPrivateKey
-                })
-            })
-            .catch(err => console.log(err))
-        api.getDasbyUpi()
-            .then(dasbyInfo => {
-                console.log("Dasby UPI Retrieved: ", (Date.now() - startTime) / 1000)                
-                this.setState({
-                    DasbyUpi: dasbyInfo.dasby.upi
-                })
-            })
-            .catch(err => console.log(err))
+        // virgil.getPrivateKey(this.props.user.upi)
+        //     .then(userPrivateKey => {
+        //         console.log("Virgil Private Key Retrieved: ", (Date.now() - startTime) / 1000)
+        //         console.log("Virgil Private Key : ", userPrivateKey )
+        //         this.setState({
+        //             userPrivateKey: userPrivateKey
+        //         })
+        //     })
+        //     .catch(err => console.log(err))
 
-        const virgilCrypto = new VirgilCrypto()
-        twilio.getTwilioToken(this.state.userInfo.upi)
+        twilio.getTwilioToken(this.props.user.upi)
         .then(twilio.createChatClient)
         .then(chatClient => {
             console.log("Twilio Chat Client Recieved: ", (Date.now() - startTime) / 1000)
-            if (this.state.newUser) {
+            //chatClient.on('tokenExpired', )
+            if (this.props.user.newUser) {
                 api.getAdmin()
                     .then(result => {
                         
                         const adminUpiArray = result.admin.map(admin => admin.upi)
-                        return twilio.createChannel(chatClient, this.state.userInfo.upi, adminUpiArray)
+                        return twilio.createChannel(chatClient, this.props.user.upi, adminUpiArray)
                             .then(twilio.joinChannel)
                             .then(channel => {
                                 console.log("New Twilio Channel Created and Joined Retrieved: ", (Date.now() - startTime) / 1000)
@@ -99,64 +102,104 @@ export default class UserHomeScreen extends Component {
             else {
                 // get messages from asn
                 // if not null --> use/ set messages to state
-                AsyncStorage.multiGet(['messages', 'memberArray'], (err, dataAsync) => {
-                    const storedMessages = JSON.parse(dataAsync[0][1]);
-                    const storedMemberArray = JSON.parse(dataAsync[1][1]);
-                    console.log('dataAsync: ', dataAsync)
-                    console.log('messages: ', storedMessages)
-                    console.log('memberArray: ', storedMemberArray)
-                    if (err) {
-                        console.log('error getting messages from async: ', err)
-                    } else if (dataAsync !== null) {
-
-                        this.setState({ 
-                            messages: storedMessages, 
-                            memberArray: storedMemberArray, 
-                        })
-                    }
-                    if(storedMessages&&storedMemberArray){
-                        this.setState({
-                            spinnerVisible: false
-                        })
-                    }
+                // AsyncStorage.multiGet(['messages', 'memberArray'], (err, dataAsync) => {
+                //     const storedMessages = JSON.parse(dataAsync[0][1]);
+                //     const storedMemberArray = JSON.parse(dataAsync[1][1]);
+                //     console.log('dataAsync: ', dataAsync)
+                //     console.log('messages: ', storedMessages)
+                //     console.log('memberArray: ', storedMemberArray)
+                //     if (err) {
+                //         console.log('error getting messages from async: ', err)
+                console.log("this.props.storedMessages: ", this.props.storedMessages)
+                if (this.props.storedMessages) {
+                    this.setState({ 
+                        messages: this.props.storedMessages, 
+                        memberArray: this.props.storedMemberArray,
+                        newestStoredMessageIndex: this.props.storedMessages[this.props.storedMessages.length - 1].index
+                    })
+                }
+                if(this.props.storedMessages&&this.props.storedMemberArray){
+                    this.setState({
+                        spinnerVisible: false
+                    })
+                }
                     
-                })
-                return twilio.findChannel(chatClient, this.state.userInfo.upi)
+                return twilio.findChannel(chatClient, this.props.user.upi)
                 .then(channel => {
                     console.log("Twilio Channel Found: ", (Date.now() - startTime) / 1000)
                     this.setState({ channel })
                     this.configureChannelEvents(channel)
-                        channel.getMessages().then(result => {
-                            console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                            console.log("----------------------------------------------------------------------------------------")
-                            this.setState({
-                                messages: result.items.map((message, i, items) => {
-                                    console.log("Messages Map Function - message #",i, " at: " ,(Date.now() - startTime) / 1000)
-                                    if (message.author === this.state.DasbyUpi) {
-                                        return {
-                                            author: message.author,
-                                            body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
-                                            me: message.author === this.state.userInfo.upi,
-                                            sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author
-                                        }
-                                    } else {
-                                        return {
-                                            author: message.author,
-                                            body: this.parseUserPayloadData(this.decryptMessage(message.body)),
-                                            me: message.author === this.state.userInfo.upi,
-                                            sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author
-                                        }
-                                    }
-                                })
-                                
-                            }, ()=> {
-                                AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
-                                console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
+                    channel.getMessagesCount()
+                        .then(channelMessageCount=>{
+                        //  console.log("channelMessageCount inside: ", channelMessageCount)
+
+// __________________everything below this line (to the ^^^^^) happens only if there are no stored messages_______________________
+                            this.state.newestStoredMessageIndex === 0 ?
+                            channel.getMessages()
+                            .then(result => {
+                                console.log("result: ", result)
+                                console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
+                                console.log("----------------------------------------------------------------------------------------")
                                 this.setState({
-                                    spinnerVisible: false
+                                    messages: result.items.map((message, i, items) => {
+                                        console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
+                                        if (message.author === this.props.dasbyUpi) {
+                                            return {
+                                                author: message.author,
+                                                body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
+                                                me: message.author === this.props.user.upi,
+                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                                                index: message.index
+                                            }
+                                        } else {
+                                            return {
+                                                author: message.author,
+                                                body: this.parseUserPayloadData(this.decryptMessage(message.body)),
+                                                me: message.author === this.props.user.upi,
+                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                                                index: message.index
+                                            }
+                                        }
+                                    })
+
+                                }, () => {
+                                    //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
+                                    this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
+                                    console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
+                                    this.setState({
+                                        spinnerVisible: false
+                                    })
                                 })
                             })
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                            :
+// __________________everything below this line (to the ^^^^^) happens only if there are stored messages________________________
+                            channel.getMessages(channelMessageCount - 1 - this.state.newestStoredMessageIndex, this.state.newestStoredMessageIndex + 1 , 'forward')
+                            .then(result => {
+                                console.log("result: ", result)
+                                console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
+                                console.log("----------------------------------------------------------------------------------------")
+                                result === undefined ?
+        // ___________the next line (to the ####### happens only if there were no new messages in twilio_______________
+                                this.setState({ messages: this.props.storedMessages })
+        //##############################################################################################################
+                                :
+        // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
+                                this.setState({
+
+                                     
+                                 }, ()=> {
+                                    //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
+                                     this.props.storeUserInfo({...this.props.user, messages: this.state.messages})
+                                     console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
+                                     this.setState({
+                                         spinnerVisible: false
+                                     })
+                                 })
+        //#############################################################################################################
+                            })
                         })
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                     this.getChannelMembers(channel)
                 })
             }
@@ -179,7 +222,8 @@ export default class UserHomeScreen extends Component {
                             this.setState({
                                 memberArray: newMemberArray,
                             }, () => {
-                                AsyncStorage.setItem('memberArray', JSON.stringify(this.state.memberArray))
+                                this.props.storeUserInfo({...this.props.user, memberArray: this.state.memberArray})
+                                // AsyncStorage.setItem('memberArray', JSON.stringify(this.state.memberArray))
                             })
                         }
                     })
@@ -190,10 +234,10 @@ export default class UserHomeScreen extends Component {
     decryptMessage = (encrytpedMessage) => {
         const virgilCrypto = new VirgilCrypto();
         const channelPrivateKeyBytes = this.state.channel.attributes.privateKey;
-        const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.state.userPrivateKey)
+        const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.userPrivateKey)
         const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
         const decryptedMessage = virgilCrypto.decrypt(encrytpedMessage, channelPrivateKey).toString('utf8')
-        console.log('decryptedMessage: ', typeof decryptedMessage)
+        console.log('decryptedMessage: ', decryptedMessage)
         return decryptedMessage
     }
 
@@ -259,11 +303,12 @@ export default class UserHomeScreen extends Component {
     }
     // may not need undefined clause in ternary below
     addMessage = (message) => {
-        const messageData = { ...message, me: message.author === this.state.userInfo.upi, sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author }
+        const messageData = { ...message, me: message.author === this.props.user.upi, sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author, index: message.index }
         this.setState({
             messages: [...this.state.messages, messageData],
         }, () => {
-            AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
+            this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
+            // AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
         })
     }
 
@@ -279,7 +324,7 @@ export default class UserHomeScreen extends Component {
 
     configureChannelEvents = (channel) => {
         channel.on('messageAdded', ({ author, body }) => {
-            if (author === this.state.DasbyUpi) {
+            if (author === this.props.dasbyUpi) {
                 this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body)) })
             } else {
                 this.addMessage({ author, body: this.parseUserPayloadData(this.decryptMessage(body)) })
@@ -318,7 +363,7 @@ export default class UserHomeScreen extends Component {
     }
 
     handleNewSurvey = () => {
-        this.props.navigation.navigate('SurveyScreen', { upi: this.state.userInfo.upi, channel: this.state.channel }) 
+        this.props.navigation.navigate('SurveyScreen', { upi: this.props.user.upi, channel: this.state.channel }) 
     }
 
     render() {
@@ -335,10 +380,10 @@ export default class UserHomeScreen extends Component {
                 />
                 <KeyboardAvoidingView enabled behavior="padding" style={styles.app} keyboardVerticalOffset={64}>
                     <Text>
-                        Welcome Home {this.state.userInfo.first_name} {this.state.userInfo.last_name}
+                        Welcome Home {this.props.user.first_name} {this.props.user.last_name}
                     </Text>
                     {this.state.messages&&this.state.memberArray&&
-                    <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.state.userInfo.upi} messages={this.state.messages} memberArray={this.state.memberArray} 
+                    <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.user.upi} messages={this.state.messages} memberArray={this.state.memberArray} 
                     />
                     }
 
@@ -393,3 +438,5 @@ const styles = StyleSheet.create({
         color: 'rgba(91, 141, 249, 1)',
     }
 })
+const UserHomeScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedUserHomeScreen);
+export default UserHomeScreen;

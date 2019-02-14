@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, Dimensions } from 'react-native';
 import twilio from '../utils/twilioUtil';
+import { connect } from "react-redux";
+import { storeSelectedPatientChat } from "../redux/actions";
 import {VirgilCrypto} from 'virgil-crypto';
 import MessageForm from '../components/MessageForm';
 import MessageList from '../components/MessageList';
@@ -9,16 +11,28 @@ import virgil from '../utils/virgilUtil';
 import MenuBar from '../components/MenuBar';
 import Spinner from 'react-native-loading-spinner-overlay';
 
+function mapDispatchToProps(dispatch) {
+    return {
+        storeSelectedPatientChat: messages => dispatch(storeSelectedPatientChat(messages)),
+    };
+}
 
+function mapStateToProps(reduxState) {
+    return {
+        adminPrivateKey: reduxState.rootReducer.userPrivateKey,
+        adminInfo: reduxState.rootReducer.user,
+        selectedPatientChats: reduxState.rootReducer.selectedPatientChats,
+        // storedMessages: reduxState.rootReducer.selectedPatientChats,
+        // storedMemberArray: reduxState.rootReducer.selectedPatientChats
+    };
+}
 
-
-export default class AdminChatScreen extends Component {
+class ConnectedAdminChatScreen extends Component {
 
     state = {
-        adminInfo: this.props.navigation.state.params.adminInfo,
+    
         channelDescriptor: this.props.navigation.state.params.channelDescriptor,
         channel: null,
-        adminPrivateKey: null,
         messages: [],
         memberArray: [],
         isTyping: false,
@@ -27,9 +41,6 @@ export default class AdminChatScreen extends Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        if (nextProps.navigation.state.params.adminInfo !== this.props.navigation.state.params.adminInfo) {
-            this.setState({ adminInfo: nextProps.navigation.state.params.adminInfo })
-        }
         if (nextProps.navigation.state.params.channelDescriptor !== this.props.navigation.state.params.channelDescriptor) {
             this.setState({ channelDescriptor: nextProps.navigation.state.params.channelDescriptor })
         }
@@ -40,14 +51,14 @@ export default class AdminChatScreen extends Component {
         console.log("----------------------------------------------------------")
         console.log("hitting compoenentDidMount at: ", (Date.now() - startTime) / 1000)
         console.log('this.state.channelDescriptor: ', this.state.channelDescriptor)
-        virgil.getPrivateKey(this.state.adminInfo.upi)
-            .then(adminPrivateKey => {
-                console.log("Virgil Private Key Retrieved: ", (Date.now() - startTime) / 1000)
-                this.setState({
-                    adminPrivateKey: adminPrivateKey
-                })
-            })
-            .catch(err => console.log(err))
+        // virgil.getPrivateKey(this.props.adminInfo.upi)
+        //     .then(adminPrivateKey => {
+        //         console.log("Virgil Private Key Retrieved: ", (Date.now() - startTime) / 1000)
+        //         this.setState({
+        //             adminPrivateKey: adminPrivateKey
+        //         })
+        //     })
+        //     .catch(err => console.log(err))
 
         this.state.channelDescriptor.getChannel()
         .then(channel => {
@@ -63,7 +74,7 @@ export default class AdminChatScreen extends Component {
                         return {
                             author: message.author,
                             body: this.parseIncomingPayloadData(this.decryptMessage(message.body)),
-                            me: message.author === this.state.adminInfo.upi,
+                            me: message.author === this.props.adminInfo.upi,
                             sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author
                         }
                     })
@@ -90,6 +101,11 @@ export default class AdminChatScreen extends Component {
                     })
                 })
             })
+            if (this.props.selectedPatientChats){
+                this.props.storeSelectedPatientChat([...this.props.selectedPatientChats, { messages: this.state.messages, memberArray: this.state.memberArray }])
+            } else {
+                this.props.storeSelectedPatientChat([{ messages: this.state.messages, memberArray: this.state.memberArray }])
+            }
         })
         
     }
@@ -97,7 +113,7 @@ export default class AdminChatScreen extends Component {
     decryptMessage = (encrytpedMessage) => {
         const virgilCrypto = new VirgilCrypto();
         const channelPrivateKeyBytes = this.state.channel.attributes.privateKey;
-        const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.state.adminPrivateKey)
+        const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.adminPrivateKey)
         const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
         const decryptedMessage = virgilCrypto.decrypt(encrytpedMessage, channelPrivateKey).toString('utf8')
         return decryptedMessage
@@ -134,7 +150,7 @@ export default class AdminChatScreen extends Component {
 
 // may not need undefined clause in ternary below
     addMessage = (message) => {
-        const messageData = { ...message, me: message.author === this.state.adminInfo.first_name, sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author }
+        const messageData = { ...message, me: message.author === this.props.adminInfo.first_name, sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author }
         this.setState({
             messages: [...this.state.messages, messageData],
         })
@@ -199,9 +215,9 @@ render () {
             />
             <KeyboardAvoidingView enabled behavior="padding" style={styles.app} keyboardVerticalOffset={64}>
                 <Text>
-                    Welcome Home {this.state.adminInfo.first_name} {this.state.adminInfo.last_name}
+                    Welcome Home {this.props.adminInfo.first_name} {this.props.adminInfo.last_name}
                 </Text>
-                <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.state.adminInfo.upi} messages={this.state.messages} memberArray={this.state.memberArray} />
+                <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.adminInfo.upi} messages={this.state.messages} memberArray={this.state.memberArray} />
                 <MessageForm channel={this.state.channel} onMessageSend={this.handleNewMessage} />
                 <MenuBar navigation={this.props.navigation} screen={'chat'} />
 
@@ -234,3 +250,6 @@ const styles = StyleSheet.create({
         marginTop: 10
     },
 })
+
+const AdminChatScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedAdminChatScreen);
+export default AdminChatScreen;

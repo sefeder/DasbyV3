@@ -1,21 +1,27 @@
 import React, { Component } from 'react'
 import { StyleSheet, View, TouchableHighlight, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Dimensions, AsyncStorage } from 'react-native';
+import { connect } from "react-redux";
 import Icon from 'react-native-vector-icons/Ionicons';
 import EmergencyButton from './EmergencyButton'
 import { ActionSheetCustom as ActionSheet } from 'react-native-actionsheet'
 
-class MenuBar extends Component {
+function mapStateToProps(reduxState) {
+    return {
+        role: reduxState.rootReducer.user.role,
+    };
+}
+
+class ConnectedMenuBar extends Component {
 
     state = {
-        role: null
     }
 
     componentDidMount() {
-        AsyncStorage.getItem('userInfo', (err, result)=>{
-            if(result !== null){
-                this.setState({role: JSON.parse(result).user.role})
-            }
-        })
+        // AsyncStorage.getItem('userInfo', (err, result)=>{
+        //     if(result !== null){
+        //         this.setState({role: JSON.parse(result).user.role})
+        //     }
+        // })
     }
 
     showActionSheet = () => {
@@ -25,7 +31,7 @@ class MenuBar extends Component {
     render() {
         return (
             <View>
-            { this.state.role==='user' ?
+            { this.props.role==='user' ?
 
             <View style={styles.menu}>
 
@@ -194,4 +200,5 @@ const styles = StyleSheet.create({
     }
 });
 
+const MenuBar = connect(mapStateToProps, null)(ConnectedMenuBar);
 export default MenuBar

@@ -1,13 +1,23 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { storeUserInfo } from "../redux/actions";
+import { storeUserInfo, storeUserPrivateKey, storeTwilioToken } from "../redux/actions";
+import { VirgilCrypto } from 'virgil-crypto';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage} from 'react-native';
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 function mapDispatchToProps(dispatch) {
     return {
-        storeUserInfo: info => dispatch(storeUserInfo(info))
+        storeUserInfo: info => dispatch(storeUserInfo(info)),
+        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey)),
+        storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
+    };
+}
+
+function mapStateToProps(reduxState) {
+    return {
+        storedMessages: reduxState.rootReducer.user.messages,
+        storedMemberArray: reduxState.rootReducer.user.memberArray
     };
 }
 
@@ -41,17 +51,23 @@ class ConnectedLogInScreen extends Component {
                     return;
                 }
                 if (res.user.role === "user"){
-                    this.props.storeUserInfo(res.user)
-                    AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
-                        this.props.navigation.navigate('UserHomeScreen', {userInfo: res, newUser: false})
-                    })
+                    this.props.storeUserInfo({...res.user, newUser: false, messages: this.props.storedMessages, memberArray: this.props.memberArray})
+                    const virgilCrypto = new VirgilCrypto()
+                    const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
+                    this.props.storeUserPrivateKey(userPrivateKey)
+                    this.props.navigation.navigate('UserHomeScreen')
+                    // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
+                    // })
                 }
                 if (res.user.role === "admin"){
                     console.log("succesfully loged in as admin!")
                     this.props.storeUserInfo(res.user)
-                    AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
-                        this.props.navigation.navigate('AdminSelectionScreen', { adminInfo: res })
-                    })
+                    const virgilCrypto = new VirgilCrypto()
+                    const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
+                    this.props.storeUserPrivateKey(userPrivateKey)
+                    this.props.navigation.navigate('AdminSelectionScreen')
+                    // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
+                    // })
                 }
             })
             .catch(err => console.log(err))
@@ -194,5 +210,5 @@ const styles = StyleSheet.create({
     }
 });
 
-const LogInScreen = connect(null, mapDispatchToProps)(ConnectedLogInScreen);
+const LogInScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedLogInScreen);
 export default LogInScreen;

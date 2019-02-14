@@ -1,20 +1,36 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, AsyncStorage, Dimensions } from 'react-native';
 import twilio from '../utils/twilioUtil';
+import { connect } from "react-redux";
+import { storeSelectedPatientUpi } from "../redux/actions";
 import { ChannelDescriptor } from 'twilio-chat/lib/channeldescriptor';
 import api from '../utils/api';
 import MenuBar from '../components/MenuBar';
 
-export default class AdminSelectionScreen extends Component {
+function mapDispatchToProps(dispatch) {
+    return {
+        storeSelectedPatientUpi: selectedPatientUpi => dispatch(storeSelectedPatientUpi(selectedPatientUpi)),
+       
+    };
+}
+
+function mapStateToProps(reduxState) {
+    return {
+        user: reduxState.rootReducer.user,
+        selectedPatientUpis: reduxState.rootReducer.selectedPatientUpis,
+    };
+}
+
+class ConnectedAdminSelectionScreen extends Component {
 
     state = {
-        adminInfo: this.props.navigation.state.params.adminInfo.user,
+        // adminInfo: this.props.navigation.state.params.adminInfo.user,
         channels: [],
         userArray: []
     }
 
     componentDidMount() {
-        twilio.getTwilioToken(this.state.adminInfo.upi)
+        twilio.getTwilioToken(this.props.user.upi) //admin's upi
             .then(twilio.createChatClient)
             .then(chatClient => {
                 return twilio.getAllChannels(chatClient)
@@ -37,9 +53,15 @@ export default class AdminSelectionScreen extends Component {
     }
 
     channelButtonHandler = selectedChannel => {
-        AsyncStorage.setItem('adminSelectedPatientUpi', JSON.stringify(selectedChannel.uniqueName), ()=>{
-            this.props.navigation.navigate('AdminChatScreen', { adminInfo: this.state.adminInfo, channelDescriptor: selectedChannel})
-        })
+        if(this.props.selectedPatientUpis){
+            this.props.storeSelectedPatientUpi([...this.props.selectedPatientUpis, selectedChannel.uniqueName])
+        }
+        else{
+            this.props.storeSelectedPatientUpi([selectedChannel.uniqueName])
+        }
+        this.props.navigation.navigate('AdminChatScreen', { adminInfo: this.props.user, channelDescriptor: selectedChannel})
+        // AsyncStorage.setItem('adminSelectedPatientUpi', JSON.stringify(selectedChannel.uniqueName), ()=>{
+        // })
     }
 
     channelFilterCriteria = (channel,idx,arr) => {
@@ -77,7 +99,7 @@ export default class AdminSelectionScreen extends Component {
             <ScrollView >
                 <View style={styles.app}>
                     <Text>
-                        Welcome, {this.state.adminInfo.first_name} {this.state.adminInfo.last_name}, To The Channel Selector
+                        Welcome, {this.props.user.first_name} {this.props.user.last_name}, To The Channel Selector
                     </Text>
                     <Text>
                         Please select a conversation to join
@@ -154,3 +176,6 @@ const styles = StyleSheet.create({
         overflow: 'scroll'
     }
 })
+
+const AdminSelectionScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedAdminSelectionScreen);
+export default AdminSelectionScreen;

@@ -186,8 +186,26 @@ class ConnectedUserHomeScreen extends Component {
                                 :
         // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
                                 this.setState({
-
-                                     
+                                    messages: this.props.storedMessages.concat(result.items.map((message, i, items) => {
+                                        console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
+                                        if (message.author === this.props.dasbyUpi) {
+                                            return {
+                                                author: message.author,
+                                                body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
+                                                me: message.author === this.props.user.upi,
+                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                                                index: message.index
+                                            }
+                                        } else {
+                                            return {
+                                                author: message.author,
+                                                body: this.parseUserPayloadData(this.decryptMessage(message.body)),
+                                                me: message.author === this.props.user.upi,
+                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                                                index: message.index
+                                            }
+                                        }
+                                    }))
                                  }, ()=> {
                                     //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                      this.props.storeUserInfo({...this.props.user, messages: this.state.messages})

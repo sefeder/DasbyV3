@@ -170,6 +170,7 @@ class ConnectedUserHomeScreen extends Component {
                                         spinnerVisible: false
                                     })
                                 })
+                                this.getChannelMembers(channel)
                             })
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                             :
@@ -181,7 +182,7 @@ class ConnectedUserHomeScreen extends Component {
                                 console.log("----------------------------------------------------------------------------------------")
                                 result === undefined ?
         // ___________the next line (to the ####### happens only if there were no new messages in twilio_______________
-                                this.setState({ messages: this.props.storedMessages })
+                                this.setState({ messages: this.props.storedMessages, memberArray: this.props.storedMemberArray })
         //##############################################################################################################
                                 :
         // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
@@ -205,8 +206,8 @@ class ConnectedUserHomeScreen extends Component {
                                                 index: message.index
                                             }
                                         }
-                                    }))
-                                 }, ()=> {
+                                    })),
+                                 memberArray: this.props.storedMemberArray }, ()=> {
                                     //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                      this.props.storeUserInfo({...this.props.user, messages: this.state.messages})
                                      console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
@@ -218,7 +219,6 @@ class ConnectedUserHomeScreen extends Component {
                             })
                         })
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                    this.getChannelMembers(channel)
                 })
             }
         })

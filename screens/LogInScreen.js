@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { storeUserInfo, storeUserPrivateKey, storeTwilioToken } from "../redux/actions";
+import { storeUserInfo, storeUserPrivateKey, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
 import { VirgilCrypto } from 'virgil-crypto';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage} from 'react-native';
 import api from '../utils/api';
@@ -10,6 +10,7 @@ function mapDispatchToProps(dispatch) {
     return {
         storeUserInfo: info => dispatch(storeUserInfo(info)),
         storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey)),
+        storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
         storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
     };
 }
@@ -35,6 +36,9 @@ class ConnectedLogInScreen extends Component {
     submitLogIn = () => {
         if (this.state.buttonLockout) {return;}
         this.setState({buttonLockout: true})
+        setTimeout(() => {
+            this.setState({ buttonLockout: false })
+        }, 5000);
         api.logIn({
             email: this.state.emailInput,
             password: this.state.passwordInput
@@ -55,6 +59,12 @@ class ConnectedLogInScreen extends Component {
                     const virgilCrypto = new VirgilCrypto()
                     const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
                     this.props.storeUserPrivateKey(userPrivateKey)
+                    api.getDasbyUpi()
+                        .then(dasbyInfo => {
+                            // console.log("Dasby UPI Retrieved: ", (Date.now() - startTime) / 1000)
+                            this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
+                        })
+                        .catch(err => console.log(err))
                     this.props.navigation.navigate('UserHomeScreen')
                     // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
                     // })
@@ -65,6 +75,12 @@ class ConnectedLogInScreen extends Component {
                     const virgilCrypto = new VirgilCrypto()
                     const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
                     this.props.storeUserPrivateKey(userPrivateKey)
+                    api.getDasbyUpi()
+                        .then(dasbyInfo => {
+                            // console.log("Dasby UPI Retrieved: ", (Date.now() - startTime) / 1000)
+                            this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
+                        })
+                        .catch(err => console.log(err))
                     this.props.navigation.navigate('AdminSelectionScreen')
                     // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
                     // })

@@ -1,13 +1,21 @@
 import React, { Component } from 'react'
 import { StyleSheet, View, TouchableHighlight, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Dimensions, AsyncStorage } from 'react-native';
 import { connect } from "react-redux";
+import { clearStore } from "../redux/actions";
 import Icon from 'react-native-vector-icons/Ionicons';
-import EmergencyButton from './EmergencyButton'
-import { ActionSheetCustom as ActionSheet } from 'react-native-actionsheet'
+import EmergencyButton from './EmergencyButton';
+import { ActionSheetCustom as ActionSheet } from 'react-native-actionsheet';
+import { persistor } from '../index'
+
+function mapDispatchToProps(dispatch) {
+    return {
+        clearStore: () => dispatch(clearStore()),
+    };
+}
 
 function mapStateToProps(reduxState) {
     return {
-        role: reduxState.rootReducer.user.role,
+        role: reduxState.mainReducer.user.role,
     };
 }
 
@@ -92,7 +100,10 @@ class ConnectedMenuBar extends Component {
                                 }
                                 if (buttonIndex === 2) {
                                     AsyncStorage.clear()
+                                    this.props.clearStore()
+                                    // persistor.purge()
                                     this.props.navigation.navigate('LogInScreen')
+                                    
                                 }
                             }
                         }
@@ -167,6 +178,8 @@ class ConnectedMenuBar extends Component {
                             }
                             if (buttonIndex === 1) {
                                 AsyncStorage.clear()
+                                this.props.clearStore()
+                                // persistor.purge()
                                 this.props.navigation.navigate('LogInScreen')
                             }
                         }
@@ -200,5 +213,5 @@ const styles = StyleSheet.create({
     }
 });
 
-const MenuBar = connect(mapStateToProps, null)(ConnectedMenuBar);
+const MenuBar = connect(mapStateToProps, mapDispatchToProps)(ConnectedMenuBar);
 export default MenuBar

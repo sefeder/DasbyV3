@@ -1,38 +1,41 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
+import { storeUserInfo, storeUserPrivateKey, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
+import { VirgilCrypto } from 'virgil-crypto';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, AsyncStorage, Image, Dimensions, ImageBackground } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import api from '../utils/api';
 
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info)),
+        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey)),
+        storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
+        storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
+    };
+}
 
 function mapStateToProps(reduxState) {
     return {
-        user: reduxState.rootReducer.user,
+        user: reduxState.mainReducer.user,
     };
 }
 
 class ConnectedLandingScreen extends Component {
 
-    componentDidUpdate(prevProps) {
-             
-    }
-    
     componentDidMount(){
-        // if (this.props.user === {}) {
-        //     this.props.navigation.navigate('LogInScreen')
-        // }
-        // if (this.props !== prevProps) {
-            if (this.props.user.upi) {
-                if (this.props.user.role === 'user') {
-                    this.props.navigation.navigate('UserHomeScreen')
-                } else {
-                    this.props.navigation.navigate('AdminSelectionScreen')
-                }
+        if (this.props.user.upi) {
+            const virgilCrypto = new VirgilCrypto()
+            const userPrivateKey = virgilCrypto.importPrivateKey(this.props.user.private_key, this.props.user.upi)
+            this.props.storeUserPrivateKey(userPrivateKey)
+            if (this.props.user.role === 'user') {
+                this.props.navigation.navigate('UserHomeScreen')
             } else {
-                // AsyncStorage.clear()
-                this.props.navigation.navigate('LogInScreen')
+                this.props.navigation.navigate('AdminSelectionScreen')
             }
-        // }  
+        } else {
+            this.props.navigation.navigate('LogInScreen')
+        }
     }
 
     render(){
@@ -83,5 +86,5 @@ const styles = StyleSheet.create({
     },
 });
 
-const LandingScreen = connect(mapStateToProps, null)(ConnectedLandingScreen);
+const LandingScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedLandingScreen);
 export default LandingScreen;

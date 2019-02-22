@@ -1,8 +1,11 @@
-import { STORE_USER_INFO, STORE_DASBY_UPI, STORE_USER_PRIVATE_KEY, STORE_TWILIO_TOKEN, STORE_SELECTED_PATIENT_UPI, STORE_SELECTED_PATIENT_CHAT} from "../action-types";
+import { STORE_USER_INFO, STORE_DASBY_UPI, STORE_USER_PRIVATE_KEY, STORE_CHAT_CLIENT, STORE_PATIENT_DATA, STORE_CURRENT_SELECTED_PATIENT_UPI} from "../action-types";
+
 const initialState = {
-    user: {}
+    user: {},
+    storedPatientData: {}
 };
-function rootReducer(state, action) {
+
+ mainReducer = (state, action) => {
     if (state === undefined){
         return initialState
     }
@@ -19,22 +22,19 @@ function rootReducer(state, action) {
             return Object.assign({}, state, {
                 userPrivateKey: action.userPrivateKey
             });
-        case STORE_SELECTED_PATIENT_UPI:
+        case STORE_CURRENT_SELECTED_PATIENT_UPI:
             return Object.assign({}, state, {
-                selectedPatientUpis: action.selectedPatientUpi
+                currentSelectedPatientUpi: action.currentSelectedPatientUpi
             });
-        case STORE_SELECTED_PATIENT_CHAT:
-            return Object.assign({}, state, {
-                selectedPatientChats: action.selectedPatientChat
-            });
-        case STORE_TWILIO_TOKEN:
-            return Object.assign({}, state, {
-                twilioToken: action.twilioToken
-            });
-        // case:    
+        case STORE_PATIENT_DATA:
+            let newState = state;
+            newState.storedPatientData[action.selectedPatientData.selectedPatientUpi] = action.selectedPatientData
+            return newState;
         default:
-            return state
+            return initialState
     }
 
 }
-export default rootReducer;
+
+
+export default mainReducer;

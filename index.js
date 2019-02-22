@@ -5,12 +5,11 @@ import { name as appName } from "./app.json";
 import MessageQue from "react-native/Libraries/BatchedBridge/MessageQueue.js";
 import { persistStore } from 'redux-persist';
 import { Provider } from 'react-redux';
-import configureStore from './redux/store';
+import store from './redux/store';
 import LoadingScreen from "./screens/LoadingScreen";
 import {PersistGate} from "redux-persist/lib/integration/react"
 
-const store = configureStore()
-const persistor = persistStore(
+export const persistor = persistStore(
     store,
     null,
     () => {

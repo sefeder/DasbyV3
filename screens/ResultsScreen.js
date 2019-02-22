@@ -18,8 +18,8 @@ function mapDispatchToProps(dispatch) {
 
 function mapStateToProps(reduxState) {
     return {
-        user: reduxState.rootReducer.user,
-        patientUpi: reduxState.rootReducer.selectedPatientUpi
+        user: reduxState.mainReducer.user,
+        selectedPatientUpi: reduxState.mainReducer.currentSelectedPatientUpi
     };
 }
 
@@ -40,9 +40,9 @@ class ConnectedResultsScreen extends Component {
     }
 
     adminOrUser = () => {
-        if (this.props.patientUpi !== undefined) {
+        if (this.props.selectedPatientUpi !== undefined) {
             //if admin is currently logged in
-            this.getAndSetResults(this.props.patientUpi)
+            this.getAndSetResults(this.props.selectedPatientUpi)
         } else {
              //else user is logged in
             this.getAndSetResults(this.props.user.upi)

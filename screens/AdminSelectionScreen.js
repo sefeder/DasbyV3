@@ -2,22 +2,21 @@ import React, { Component } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, AsyncStorage, Dimensions } from 'react-native';
 import twilio from '../utils/twilioUtil';
 import { connect } from "react-redux";
-import { storeSelectedPatientUpi } from "../redux/actions";
+import { storeCurrentSelectedPatientUpi } from "../redux/actions";
 import { ChannelDescriptor } from 'twilio-chat/lib/channeldescriptor';
 import api from '../utils/api';
 import MenuBar from '../components/MenuBar';
+import { STORE_PATIENT_DATA } from '../redux/action-types';
 
 function mapDispatchToProps(dispatch) {
     return {
-        storeSelectedPatientUpi: selectedPatientUpi => dispatch(storeSelectedPatientUpi(selectedPatientUpi)),
-       
+        storeCurrentSelectedPatientUpi: currentSelectedPatientUpi => dispatch(storeCurrentSelectedPatientUpi(currentSelectedPatientUpi)),
     };
 }
 
 function mapStateToProps(reduxState) {
     return {
-        user: reduxState.rootReducer.user,
-        selectedPatientUpis: reduxState.rootReducer.selectedPatientUpis,
+        user: reduxState.mainReducer.user,
     };
 }
 
@@ -53,15 +52,9 @@ class ConnectedAdminSelectionScreen extends Component {
     }
 
     channelButtonHandler = selectedChannel => {
-        if(this.props.selectedPatientUpis){
-            this.props.storeSelectedPatientUpi([...this.props.selectedPatientUpis, selectedChannel.uniqueName])
-        }
-        else{
-            this.props.storeSelectedPatientUpi([selectedChannel.uniqueName])
-        }
-        this.props.navigation.navigate('AdminChatScreen', { adminInfo: this.props.user, channelDescriptor: selectedChannel})
-        // AsyncStorage.setItem('adminSelectedPatientUpi', JSON.stringify(selectedChannel.uniqueName), ()=>{
-        // })
+        console.log("selectedChannel.uniqueName:", selectedChannel.uniqueName)
+        this.props.storeCurrentSelectedPatientUpi(selectedChannel.uniqueName)
+        this.props.navigation.navigate('AdminChatScreen', {channelDescriptor: selectedChannel})
     }
 
     channelFilterCriteria = (channel,idx,arr) => {

@@ -15,13 +15,6 @@ function mapDispatchToProps(dispatch) {
     };
 }
 
-function mapStateToProps(reduxState) {
-    return {
-        storedMessages: reduxState.rootReducer.user.messages,
-        storedMemberArray: reduxState.rootReducer.user.memberArray
-    };
-}
-
 class ConnectedLogInScreen extends Component {
 
     state = {
@@ -55,7 +48,7 @@ class ConnectedLogInScreen extends Component {
                     return;
                 }
                 if (res.user.role === "user"){
-                    this.props.storeUserInfo({...res.user, newUser: false, messages: this.props.storedMessages, memberArray: this.props.memberArray})
+                    this.props.storeUserInfo({...res.user, newUser: false})
                     const virgilCrypto = new VirgilCrypto()
                     const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
                     this.props.storeUserPrivateKey(userPrivateKey)
@@ -75,6 +68,7 @@ class ConnectedLogInScreen extends Component {
                     const virgilCrypto = new VirgilCrypto()
                     const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
                     this.props.storeUserPrivateKey(userPrivateKey)
+                    console.log("userPrivateKey: ", userPrivateKey)
                     api.getDasbyUpi()
                         .then(dasbyInfo => {
                             // console.log("Dasby UPI Retrieved: ", (Date.now() - startTime) / 1000)
@@ -226,5 +220,5 @@ const styles = StyleSheet.create({
     }
 });
 
-const LogInScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedLogInScreen);
+const LogInScreen = connect(null, mapDispatchToProps)(ConnectedLogInScreen);
 export default LogInScreen;

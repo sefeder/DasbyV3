@@ -19,7 +19,7 @@ function mapDispatchToProps(dispatch) {
 
 function mapStateToProps(reduxState) {
     return {
-        user: reduxState.rootReducer.user,
+        user: reduxState.mainReducer.user,
     };
 }
 

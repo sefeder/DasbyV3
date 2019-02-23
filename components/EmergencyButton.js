@@ -33,7 +33,9 @@ export default class EmergencyButton extends Component {
                 onPress={ () => {
                     this.showActionSheet()
                 }}>
-                    <View>
+                    <View style={{
+                        marginLeft: 9
+                    }}>
                         <Icon style={{
                             height: 30, width: 28.5, marginLeft: 19.5
                         }} size={31} color={'red'} name='ios-warning' />

@@ -304,12 +304,10 @@ render () {
             />
             <KeyboardAvoidingView enabled behavior="padding" style={styles.app} keyboardVerticalOffset={64}>
                 <Text>
-                    Welcome Home {this.props.adminInfo.first_name} {this.props.adminInfo.last_name}
+                    Welcome Home {this.props.adminInfo.first_name}
                 </Text>
                 <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.adminInfo.upi} messages={this.state.messages} memberArray={this.state.memberArray} />
                 <MessageForm channel={this.state.channel} onMessageSend={this.handleNewMessage} />
-                <MenuBar navigation={this.props.navigation} screen={'chat'} />
-
             </KeyboardAvoidingView>
         </SafeAreaView>
     )

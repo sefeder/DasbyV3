@@ -23,19 +23,9 @@ function mapStateToProps(reduxState) {
 
 class ConnectedLandingScreen extends Component {
 
-    componentDidMount(){
-        if (this.props.user.upi) {
-            const virgilCrypto = new VirgilCrypto()
-            const userPrivateKey = virgilCrypto.importPrivateKey(this.props.user.private_key, this.props.user.upi)
-            this.props.storeUserPrivateKey(userPrivateKey)
-            if (this.props.user.role === 'user') {
-                this.props.navigation.navigate('UserHomeScreen')
-            } else {
-                this.props.navigation.navigate('AdminSelectionScreen')
-            }
-        } else {
-            this.props.navigation.navigate('LogInScreen')
-        }
+   
+    componentDidMount() {
+        this.props.navigation.navigate('LogInScreen')
     }
 
     render(){

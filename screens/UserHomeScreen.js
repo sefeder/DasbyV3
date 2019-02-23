@@ -384,12 +384,8 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     handleNewSurvey = () => {
-        this.props.navigation.navigate('SurveyScreen', { upi: this.props.user.upi, channel: this.state.channel }) 
+        this.props.navigation.navigate('SurveyScreen', { upi: this.props.user.upi }) 
     }
-
-    // componentWillUnmount(){
-    //     this.state.channel.removeEventListener(this.configureChannelEvents)
-    // }
 
     componentWillUnmount() {
         this.state.channel.removeListener('messageAdded', ({ author, body, index }) => {
@@ -438,7 +434,7 @@ class ConnectedUserHomeScreen extends Component {
                 />
                 <KeyboardAvoidingView enabled behavior="padding" style={styles.app} keyboardVerticalOffset={64}>
                     <Text>
-                        Welcome Home {this.props.user.first_name} {this.props.user.last_name}
+                        Welcome Home {this.props.user.first_name}
                     </Text>
                     {this.state.messages&&this.state.memberArray&&
                     <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.user.upi} messages={this.state.messages} memberArray={this.state.memberArray} 
@@ -449,7 +445,6 @@ class ConnectedUserHomeScreen extends Component {
                         // <MessageForm channel={this.state.channel} onMessageSend={this.handleNewMessage} /> 
                         <QuickReply ref={ref => this.QuickReply = ref} handleNewSurvey={this.handleNewSurvey} onMessageSend={this.handleNewMessage} responseArray={this.state.responseArray} isQrVisible={this.state.isQrVisible}/>
                     }
-                    <MenuBar handleNewSurvey={this.handleNewSurvey} navigation={this.props.navigation} screen={'chat'} />
                 </KeyboardAvoidingView>
             </SafeAreaView>
         )

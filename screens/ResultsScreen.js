@@ -105,7 +105,6 @@ class ConnectedResultsScreen extends Component {
                         )
                     })}
                 </ScrollView>
-                <MenuBar navigation={this.props.navigation} screen={'data'} />
             </KeyboardAvoidingView>
         )
     }

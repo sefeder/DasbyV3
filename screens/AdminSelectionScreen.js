@@ -92,10 +92,10 @@ class ConnectedAdminSelectionScreen extends Component {
             <ScrollView >
                 <View style={styles.app}>
                     <Text>
-                        Welcome, {this.props.user.first_name} {this.props.user.last_name}, To The Channel Selector
+                        Welcome {this.props.user.first_name},
                     </Text>
                     <Text>
-                        Please select a conversation to join
+                        Select a patient to view his or her data
                     </Text>
                     <View style={styles.chatList}>
 

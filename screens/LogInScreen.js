@@ -5,6 +5,9 @@ import { VirgilCrypto } from 'virgil-crypto';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage} from 'react-native';
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Spinner from 'react-native-loading-spinner-overlay';
+
+const virgilCrypto = new VirgilCrypto()
 
 function mapDispatchToProps(dispatch) {
     return {
@@ -15,23 +18,41 @@ function mapDispatchToProps(dispatch) {
     };
 }
 
+function mapStateToProps(reduxState) {
+    return {
+        user: reduxState.mainReducer.user,
+    };
+}
+
 class ConnectedLogInScreen extends Component {
 
     state = {
         emailInput: null,
         passwordInput: null,
         hiddenPass: true,
-        buttonLockout: false
+        buttonLockout: false,
+        spinnerVisible: false
     }
+
+    componentDidMount() {
+        if (this.props.user.upi) {
+            const userPrivateKey = virgilCrypto.importPrivateKey(this.props.user.private_key, this.props.user.upi)
+            this.props.storeUserPrivateKey(userPrivateKey)
+            if (this.props.user.role === 'user') {
+                this.props.navigation.navigate('UserHomeScreen')
+            } else {
+                this.props.navigation.navigate('AdminSelectionScreen')
+            }
+        } else {
+            return;
+        }
+    }
+
     viewPass = () => {
         this.setState({hiddenPass: !this.state.hiddenPass})
     }
     submitLogIn = () => {
-        if (this.state.buttonLockout) {return;}
-        this.setState({buttonLockout: true})
-        setTimeout(() => {
-            this.setState({ buttonLockout: false })
-        }, 5000);
+        this.setState({ spinnerVisible: true})
         api.logIn({
             email: this.state.emailInput,
             password: this.state.passwordInput
@@ -39,17 +60,16 @@ class ConnectedLogInScreen extends Component {
             .then(res => {
                 if (!res.status && res.message === "invalid email") {
                     console.log('that email is invalid')
-                    this.setState({emailInput: '', passwordInput: '', buttonLockout: false})
+                    this.setState({ emailInput: '', passwordInput: '', spinnerVisible: false})
                     return;
                 }
                 if (!res.status && res.message === "password does not match") {
                     console.log('that password does not match that email')
-                    this.setState({ emailInput: '', passwordInput: '', buttonLockout: false})
+                    this.setState({ emailInput: '', passwordInput: '', spinnerVisible: false})
                     return;
                 }
                 if (res.user.role === "user"){
                     this.props.storeUserInfo({...res.user, newUser: false})
-                    const virgilCrypto = new VirgilCrypto()
                     const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
                     this.props.storeUserPrivateKey(userPrivateKey)
                     api.getDasbyUpi()
@@ -58,6 +78,7 @@ class ConnectedLogInScreen extends Component {
                             this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
                         })
                         .catch(err => console.log(err))
+                    this.setState({ spinnerVisible: false })
                     this.props.navigation.navigate('UserHomeScreen')
                     // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
                     // })
@@ -65,7 +86,6 @@ class ConnectedLogInScreen extends Component {
                 if (res.user.role === "admin"){
                     console.log("succesfully loged in as admin!")
                     this.props.storeUserInfo(res.user)
-                    const virgilCrypto = new VirgilCrypto()
                     const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
                     this.props.storeUserPrivateKey(userPrivateKey)
                     console.log("userPrivateKey: ", userPrivateKey)
@@ -75,6 +95,7 @@ class ConnectedLogInScreen extends Component {
                             this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
                         })
                         .catch(err => console.log(err))
+                    this.setState({ spinnerVisible: false })
                     this.props.navigation.navigate('AdminSelectionScreen')
                     // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
                     // })
@@ -85,7 +106,17 @@ class ConnectedLogInScreen extends Component {
 
     render() {
         return (
+            
             <SafeAreaView style={{ flex: 1 }}>
+                <Spinner
+                visible={this.state.spinnerVisible}
+                textContent={'Loading...'}
+                textStyle={{ color: 'white' }}
+                cancelable={false}
+                color={'white'}
+                animation={'fade'}
+                overlayColor={'rgba(12, 8, 8, .4)'}
+            />
                 <KeyboardAvoidingView enabled behavior="padding" style={styles.app} keyboardVerticalOffset={64}> 
                     <View style={styles.inputForm}>
                         <View>
@@ -220,5 +251,5 @@ const styles = StyleSheet.create({
     }
 });
 
-const LogInScreen = connect(null, mapDispatchToProps)(ConnectedLogInScreen);
+const LogInScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedLogInScreen);
 export default LogInScreen;

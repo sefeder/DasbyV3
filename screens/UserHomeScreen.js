@@ -139,93 +139,78 @@ class ConnectedUserHomeScreen extends Component {
                         .then(channelMessageCount=>{
                         //  console.log("channelMessageCount inside: ", channelMessageCount)
 
-// __________________everything below this line (to the ^^^^^) happens only if there are no stored messages_______________________
-                            this.state.newestStoredMessageIndex === 0 ?
-                            channel.getMessages(15)
-                            .then(result => {
-                                console.log("result: ", result)
-                                console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                                console.log("----------------------------------------------------------------------------------------")
-                                this.setState({
-                                    messages: result.items.map((message, i, items) => {
-                                        console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
-                                        if (message.author === this.props.dasbyUpi) {
-                                            return {
-                                                author: message.author,
-                                                body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
-                                                me: message.author === this.props.user.upi,
-                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                                index: message.index
-                                            }
-                                        } else {
-                                            return {
-                                                author: message.author,
-                                                body: this.parseUserPayloadData(this.decryptMessage(message.body)),
-                                                me: message.author === this.props.user.upi,
-                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                                index: message.index
-                                            }
-                                        }
-                                    })
-
-                                }, () => {
-                                    //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
-                                    this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
-                                    console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
+                        // __________________everything below this line (to the ^^^^^) happens only if there are no stored messages_______________________
+                            if(this.state.newestStoredMessageIndex === 0){
+                                this.getChannelMembers(channel)
+                                channel.getMessages(15)
+                                .then(result => {
+                                    console.log("result: ", result)
+                                    console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
+                                    console.log("----------------------------------------------------------------------------------------")
                                     this.setState({
-                                        spinnerVisible: false
+                                        messages: this.mapThroughMessages(result)
+                                    }, () => {
+                                        //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
+                                        this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
+                                        console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
+                                        this.setState({
+                                            spinnerVisible: false
+                                        })
                                     })
                                 })
-                                this.getChannelMembers(channel)
-                            })
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                            :
-// __________________everything below this line (to the ^^^^^) happens only if there are stored messages________________________
-                            channel.getMessages(channelMessageCount - 1 - this.state.newestStoredMessageIndex, this.state.newestStoredMessageIndex + 1 , 'forward')
-                            .then(result => {
-                                console.log("result: ", result)
-                                console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                                console.log("----------------------------------------------------------------------------------------")
-                                result === undefined ?
-        // ___________the next line (to the ####### happens only if there were no new messages in twilio_______________
-                                this.setState({ messages: this.props.storedMessages, memberArray: this.props.storedMemberArray })
-        //##############################################################################################################
-                                :
-        // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
-                                this.setState({
-                                    messages: this.props.storedMessages.concat(result.items.map((message, i, items) => {
-                                        console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
-                                        if (message.author === this.props.dasbyUpi) {
-                                            return {
-                                                author: message.author,
-                                                body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
-                                                me: message.author === this.props.user.upi,
-                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                                index: message.index
-                                            }
-                                        } else {
-                                            return {
-                                                author: message.author,
-                                                body: this.parseUserPayloadData(this.decryptMessage(message.body)),
-                                                me: message.author === this.props.user.upi,
-                                                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                                index: message.index
-                                            }
-                                        }
-                                    })),
-                                 memberArray: this.props.storedMemberArray }, ()=> {
-                                    //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
-                                     this.props.storeUserInfo({...this.props.user, messages: this.state.messages})
-                                     console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
-                                     this.setState({
-                                         spinnerVisible: false
+                            }
+                            // __________________everything below this line (to the ^^^^^) happens only if there are stored messages________________________
+                            else{
+                                channel.getMessages(channelMessageCount - 1 - this.state.newestStoredMessageIndex, this.state.newestStoredMessageIndex + 1 , 'forward')
+                                .then(result => {
+                                    console.log("result: ", result)
+                                    console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
+                                    console.log("----------------------------------------------------------------------------------------")
+                                    result === undefined ?
+                                    // ___________the next line (to the ####### happens only if there were no new messages in twilio_______________
+                                    this.setState({ messages: this.props.storedMessages, memberArray: this.props.storedMemberArray })
+                                    :
+                                    // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
+                                    this.setState({
+                                        messages: this.props.storedMessages.concat(this.mapThroughMessages(result)),
+                                     memberArray: this.props.storedMemberArray }, ()=> {
+                                        //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
+                                         this.props.storeUserInfo({...this.props.user, messages: this.state.messages})
+                                         console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
+                                         this.setState({
+                                             spinnerVisible: false
+                                         })
                                      })
-                                 })
-        //#############################################################################################################
-                            })
+                                })
+                                
+                            }
                         })
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 })
+            }
+        })
+    }
+
+    mapThroughMessages = (result) => {
+        return result.items.map((message, i, items) => {
+            // console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
+            if (message.author === this.props.dasbyUpi) {
+                return {
+                    author: message.author,
+                    body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
+                    me: message.author === this.props.user.upi,
+                    sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                    timeStamp: message.timestamp,
+                    index: message.index
+                }
+            } else {
+                return {
+                    author: message.author,
+                    body: this.parseUserPayloadData(this.decryptMessage(message.body)),
+                    me: message.author === this.props.user.upi,
+                    sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                    timeStamp: message.timestamp,
+                    index: message.index
+                }
             }
         })
     }
@@ -324,7 +309,13 @@ class ConnectedUserHomeScreen extends Component {
     }
     // may not need undefined clause in ternary below
     addMessage = (message) => {
-        const messageData = { ...message, me: message.author === this.props.user.upi, sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author, index: message.index }
+        const messageData = {
+            ...message,
+            me: message.author === this.props.user.upi,
+            sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author,
+            timeStamp: message.timestamp,
+            index: message.index
+        }
         this.setState({
             messages: [...this.state.messages, messageData],
         }, () => {
@@ -387,6 +378,49 @@ class ConnectedUserHomeScreen extends Component {
         this.props.navigation.navigate('SurveyScreen', { upi: this.props.user.upi }) 
     }
 
+    getOlderMessages = () => {
+        console.log(" -- getOlderMessages hit --")
+        this.setState({loading: true})
+        this.state.channel.getMessages(15, this.state.messages[0].index - 1)
+            .then(result => {
+                console.log("result: ", result)
+               if(result){
+                   this.setState({
+                       messages: result.items.map((message, i, items) => {
+                           if (message.author === this.props.dasbyUpi) {
+                               return {
+                                   author: message.author,
+                                   body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
+                                   me: message.author === this.props.user.upi,
+                                   sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                                   timeStamp: message.timestamp,
+                                   index: message.index
+                               }
+                           } else {
+                               return {
+                                   author: message.author,
+                                   body: this.parseUserPayloadData(this.decryptMessage(message.body)),
+                                   me: message.author === this.props.user.upi,
+                                   sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                                   timeStamp: message.timestamp,
+                                   index: message.index
+                               }
+                           }
+                       }).concat(this.props.storedMessages),
+                   }, () => {
+                       this.setState({loading: false})
+                       this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
+                   })
+
+                
+               }
+            })
+        // if(this.state.channel !== null){
+        //     this.state.channel.getMessages(15, this.state.messages[0].index-1, 'backward')
+        //         .then(messages => console.log("messages: ", messages))
+        // }
+    }
+
     componentWillUnmount() {
         this.state.channel.removeListener('messageAdded', ({ author, body, index }) => {
             if (author === this.props.dasbyUpi) {
@@ -437,7 +471,7 @@ class ConnectedUserHomeScreen extends Component {
                         Welcome Home {this.props.user.first_name}
                     </Text>
                     {this.state.messages&&this.state.memberArray&&
-                    <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.user.upi} messages={this.state.messages} memberArray={this.state.memberArray} 
+                        <MessageList loading={this.state.loading} getOlderMessages={this.getOlderMessages} memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.user.upi} messages={this.state.messages} memberArray={this.state.memberArray} 
                     />
                     }
 

@@ -18,14 +18,14 @@ export default class ResultsGraph extends Component {
         lockedOut: false
     }
 
-    componentDidMount() {
-    }
+    // componentDidMount() {
+    // }
 
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.dataArray !== this.props.dataArray) {
-            this.setState({ dataArray: nextProps.dataArray })
-        }
-    }
+    // componentWillReceiveProps(nextProps) {
+    //     // if (nextProps.dataArray !== this.props.dataArray) {
+    //         this.setState({ dataArray: nextProps.dataArray })
+    //     // }
+    // }
 
     determineBackgroundColor = severity => {
         let score = parseInt(severity)
@@ -51,7 +51,7 @@ export default class ResultsGraph extends Component {
         console.log("down here!")
         let newIndex
         if (points.length > 2 && points[0].eventKey === 1) {
-            newIndex = (this.state.dataArray.length - 1)
+            newIndex = (this.props.dataArray.length - 1)
         } else if (points.length > 2 && points[0].eventKey === 0) {
             newIndex = 0
         } else {
@@ -64,7 +64,7 @@ export default class ResultsGraph extends Component {
             () => {
                 console.log('this.state.currentPoints: ', this.state.currentPoints)
                 console.log('props: ', props)
-                this.highlightPoint(this.state.dataArray, this.state.currentIndex)
+                this.highlightPoint(this.props.dataArray, this.state.currentIndex)
             })
     }
 
@@ -102,7 +102,7 @@ export default class ResultsGraph extends Component {
                             // radius={100}
                             allowPan={true}
                             allowZoom={false}
-                            zoomDomain={{ x: [this.state.dataArray.length - 5, this.state.dataArray.length + 0.5] }}
+                            zoomDomain={{ x: [this.props.dataArray.length - 5, this.props.dataArray.length + 0.5] }}
                             voronoiDimension="x"
                             onTouchStart={() => this.setState({ lockedOut: true })}
                             onTouchEnd={() => this.setState({ lockedOut: false })}
@@ -140,33 +140,33 @@ export default class ResultsGraph extends Component {
                         <VictoryArea
                             data={[
                                 { x: 0, y: 49 },
-                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 49 },
+                                { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: 49 },
                             ]}
                             style={{ data: { fill: 'rgba(255, 255, 255, 1)' } }} />
 
                         <VictoryArea
                             data={[
                                 { x: 0, y: 16 },
-                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 16 },
+                                { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: 16 },
                             ]}
                             style={{ data: { fill: 'rgba(217, 255, 255, 1)' } }} />
                         <VictoryArea
                             data={[
                                 { x: 0, y: 10 },
-                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 10 },
+                                { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: 10 },
                             ]}
                             style={{ data: { fill: 'rgba(153, 246, 255, 1)' } }} />
                         <VictoryArea
                             data={[
                                 { x: 0, y: 25 },
-                                { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: 25 },
+                                { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: 25 },
                             ]}
                             style={{ data: { fill: 'rgba(83, 178, 222, 1)' } }} />
                     </VictoryStack>
-                    {this.state.dataArray.length > 0 && <VictoryGroup
+                    {this.props.dataArray.length > 0 && <VictoryGroup
                         disable={true}
                         width={Dimensions.get('window').width * .96}
-                        data={this.state.dataArray}
+                        data={this.props.dataArray}
                         x="date"
                         y="severity"
                     >
@@ -189,7 +189,7 @@ export default class ResultsGraph extends Component {
                                 labels={["        avg"]}
                                 data={[
                                     { x: 0, y: this.state.averageSeverity },
-                                    { x: this.state.dataArray === null ? 1 : this.state.dataArray.length + 1, y: this.state.averageSeverity }
+                                    { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: this.state.averageSeverity }
                                 ]}
                             />
                         </VictoryGroup> */}

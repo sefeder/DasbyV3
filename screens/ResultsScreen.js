@@ -8,7 +8,9 @@ import MenuBar from '../components/MenuBar';
 import moment from 'moment';
 import 'moment-timezone';
 import Result from '../components/Result';
-import ResultsGraph from '../components/ResultsGraph'
+import ResultsGraph from '../components/ResultsGraph';
+import SegmentedControlTab from 'react-native-segmented-control-tab';
+import Orientation from 'react-native-orientation';
 
 function mapDispatchToProps(dispatch) {
     return {
@@ -31,11 +33,13 @@ class ConnectedResultsScreen extends Component {
         currentIndex: 0,
         currentPoints: [],
         selectedDatum: {},
-        lockedOut: false
+        lockedOut: false,
+        selectedIndex: 0
     }
 
     componentDidMount() {
         console.log("hit componentDidMount")
+        Orientation.lockToLandscape;
         this.adminOrUser();
     }
 
@@ -94,17 +98,38 @@ class ConnectedResultsScreen extends Component {
 
     }
 
+    handleIndexChange = (index) => {
+        this.setState({
+            selectedIndex: index,
+        })
+        if (index === 0){
+            Orientation.lockToLandscape;
+        }
+        else{
+            Orientation.lockToPortrait;
+        }
+    };
+    
+
     render() {
         return (
             <KeyboardAvoidingView style={styles.app}>
-                <ResultsGraph dataArray={this.state.dataArray}/>
-                <ScrollView style={{flex:1, backgroundColor: 'white'}}>
-                    { this.state.results && this.state.results.map((result, idx, resultArray) => {
-                        return(
-                            <Result key={idx} prevSeverity={resultArray[idx + 1] !== undefined ? resultArray[idx + 1].severity : null} result={result} date={result.createdAt}/>
-                        )
-                    })}
-                </ScrollView>
+                <SegmentedControlTab
+                    values={['Chart', 'Table']}
+                    selectedIndex={this.state.selectedIndex}
+                    onTabPress={this.handleIndexChange}
+                />
+                {this.state.selectedIndex === 0 ? 
+                    <ResultsGraph dataArray={this.state.dataArray} />
+                :
+                    <ScrollView style={{flex:1, backgroundColor: 'white'}}>
+                        { this.state.results && this.state.results.map((result, idx, resultArray) => {
+                            return(
+                                <Result key={idx} prevSeverity={resultArray[idx + 1] !== undefined ? resultArray[idx + 1].severity : null} result={result} date={result.createdAt}/>
+                            )
+                        })}
+                    </ScrollView>
+                }
             </KeyboardAvoidingView>
         )
     }

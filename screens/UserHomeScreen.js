@@ -46,7 +46,7 @@ class ConnectedUserHomeScreen extends Component {
         spinnerVisible: true,
         newestStoredMessageIndex: 0,
         channelPrivateKey: null,
-        importedPublicKey: null
+        importedPublicKey: null,
     }
 
     componentDidMount() {
@@ -379,46 +379,19 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     getOlderMessages = () => {
-        console.log(" -- getOlderMessages hit --")
         this.setState({loading: true})
         this.state.channel.getMessages(15, this.state.messages[0].index - 1)
             .then(result => {
-                console.log("result: ", result)
                if(result){
                    this.setState({
-                       messages: result.items.map((message, i, items) => {
-                           if (message.author === this.props.dasbyUpi) {
-                               return {
-                                   author: message.author,
-                                   body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
-                                   me: message.author === this.props.user.upi,
-                                   sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                   timeStamp: message.timestamp,
-                                   index: message.index
-                               }
-                           } else {
-                               return {
-                                   author: message.author,
-                                   body: this.parseUserPayloadData(this.decryptMessage(message.body)),
-                                   me: message.author === this.props.user.upi,
-                                   sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                   timeStamp: message.timestamp,
-                                   index: message.index
-                               }
-                           }
-                       }).concat(this.props.storedMessages),
+                       messages: this.mapThroughMessages(result).concat(this.props.storedMessages),
                    }, () => {
                        this.setState({loading: false})
                        this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
                    })
-
-                
                }
             })
-        // if(this.state.channel !== null){
-        //     this.state.channel.getMessages(15, this.state.messages[0].index-1, 'backward')
-        //         .then(messages => console.log("messages: ", messages))
-        // }
+        
     }
 
     componentWillUnmount() {

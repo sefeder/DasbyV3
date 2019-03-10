@@ -119,7 +119,7 @@ class ConnectedUserHomeScreen extends Component {
                                 channel.getMessages(15)
                                 .then(result => {
                                     this.setState({
-                                        messages: this.mapThroughMessages(result)
+                                        messages: this.mapThroughMessages(result, "new")
                                     }, () => {
                                         //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                         this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
@@ -139,7 +139,7 @@ class ConnectedUserHomeScreen extends Component {
                                     :
                                     // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
                                     this.setState({
-                                        messages: this.props.storedMessages.concat(this.mapThroughMessages(result)),
+                                        messages: this.props.storedMessages.concat(this.mapThroughMessages(result),"new"),
                                      memberArray: this.props.storedMemberArray }, ()=> {
                                         //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                          this.props.storeUserInfo({...this.props.user, messages: this.state.messages})
@@ -156,27 +156,27 @@ class ConnectedUserHomeScreen extends Component {
         })
     }
 
-    mapThroughMessages = (result) => {
+    mapThroughMessages = (result, condition) => {
         return result.items.map((message, i, items) => {
-            // console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
+            let isLastMessage = false
+            let messageBody;
+            if(condition === "new" && i === items.length-1){
+                isLastMessage = true
+            }
+
             if (message.author === this.props.dasbyUpi) {
-                return {
-                    author: message.author,
-                    body: this.parseDasbyPayloadData(this.decryptMessage(message.body)),
-                    me: message.author === this.props.user.upi,
-                    sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                    timeStamp: message.timestamp,
-                    index: message.index
-                }
+                messageBody = this.parseDasbyPayloadData(this.decryptMessage(message.body), isLastMessage)
             } else {
-                return {
-                    author: message.author,
-                    body: this.parseUserPayloadData(this.decryptMessage(message.body)),
-                    me: message.author === this.props.user.upi,
-                    sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                    timeStamp: message.timestamp,
-                    index: message.index
-                }
+                messageBody = this.parseUserPayloadData(this.decryptMessage(message.body))
+            }
+
+            return {
+                author: message.author,
+                body: messageBody,
+                me: message.author === this.props.user.upi,
+                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                timeStamp: message.timestamp,
+                index: message.index
             }
         })
     }
@@ -219,23 +219,26 @@ class ConnectedUserHomeScreen extends Component {
         return true;
     }
 
-    parseDasbyPayloadData = payloadDataString => {
+    parseDasbyPayloadData = (payloadDataString, isLastMessage) => {
         if (this.canParseStr(payloadDataString)) {
             const payloadData = JSON.parse(payloadDataString)
             if (typeof payloadData === 'number') {
                 const message = payloadData
                 return message
             }
-            if (payloadData.payload) {
-                this.setState({
-                    responseArray: payloadData.payload,
-                    isQrVisible: true
-                }, () => AsyncStorage.setItem('responses', JSON.stringify({responseArray: this.state.responseArray, isQrVisible: this.state.isQrVisible})))
-            } else {
-                this.setState({
-                    responseArray: []
-                }, () => AsyncStorage.setItem('responses', JSON.stringify({ responseArray: this.state.responseArray})))
+            if(isLastMessage){
+                if (payloadData.payload) {
+                    this.setState({
+                        responseArray: payloadData.payload,
+                        isQrVisible: true
+                    }, () => AsyncStorage.setItem('responses', JSON.stringify({responseArray: this.state.responseArray, isQrVisible: this.state.isQrVisible})))
+                } else {
+                    this.setState({
+                        responseArray: []
+                    }, () => AsyncStorage.setItem('responses', JSON.stringify({ responseArray: this.state.responseArray})))
+                }
             }
+
             if (payloadData.imageURL || payloadData.videoURL) {
                 const message = payloadData
                 return message
@@ -298,7 +301,7 @@ class ConnectedUserHomeScreen extends Component {
     configureChannelEvents = (channel) => {
         channel.on('messageAdded', ({ author, body, index }) => {
             if (author === this.props.dasbyUpi) {
-                this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body)), index })
+                this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body), true), index })
             } else {
                 this.addMessage({ author, body: this.parseUserPayloadData(this.decryptMessage(body)), index })
             }
@@ -345,7 +348,7 @@ class ConnectedUserHomeScreen extends Component {
             .then(result => {
                if(result){
                    this.setState({
-                       messages: this.mapThroughMessages(result).concat(this.props.storedMessages),
+                       messages: this.mapThroughMessages(result,"old").concat(this.props.storedMessages),
                    }, () => {
                        this.setState({loading: false})
                        this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
@@ -356,21 +359,21 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     componentWillUnmount() {
-        this.state.channel.removeListener('messageAdded', ({ author, body, index }) => {
-            if (author === this.props.dasbyUpi) {
-                this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body)), index })
-            } else {
-                this.addMessage({ author, body: this.parseUserPayloadData(this.decryptMessage(body)), index })
-            }
-        });
-        this.state.channel.removeListener('typingStarted', member => {
-            //process the member to show typing
-            this.updateTypingIndicator(member, true);
-        });
-        this.state.channel.removeListener('typingEnded', member => {
-            //process the member to stop showing typing
-            this.updateTypingIndicator(member, false);
-        });
+        // this.state.channel.removeListener('messageAdded', ({ author, body, index }) => {
+        //     if (author === this.props.dasbyUpi) {
+        //         this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body)), index })
+        //     } else {
+        //         this.addMessage({ author, body: this.parseUserPayloadData(this.decryptMessage(body)), index })
+        //     }
+        // });
+        // this.state.channel.removeListener('typingStarted', member => {
+        //     //process the member to show typing
+        //     this.updateTypingIndicator(member, true);
+        // });
+        // this.state.channel.removeListener('typingEnded', member => {
+        //     //process the member to stop showing typing
+        //     this.updateTypingIndicator(member, false);
+        // });
 
         this.setState( {
             channel: null,

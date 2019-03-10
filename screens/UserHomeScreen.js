@@ -1,21 +1,17 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, Dimensions, AsyncStorage } from 'react-native';
 import { connect } from "react-redux";
-import { storeUserInfo, storeDasbyUpi, storeUserPrivateKey } from "../redux/actions";
+import { storeUserInfo, storeDasbyUpi } from "../redux/actions";
 import twilio from '../utils/twilioUtil';
-import { VirgilCrypto } from 'virgil-crypto';
 import MessageList from '../components/MessageList';
 import api from '../utils/api';
 import QuickReply from '../components/QuickReply';
 import Spinner from 'react-native-loading-spinner-overlay';
 
-const virgilCrypto = new VirgilCrypto();
-
 function mapDispatchToProps(dispatch) {
     return {
         storeUserInfo: info => dispatch(storeUserInfo(info)),
         storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
-        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey))
     };
 }
 
@@ -23,7 +19,6 @@ function mapStateToProps(reduxState) {
     return {
         dasbyUpi: reduxState.mainReducer.dasbyUpi,
         user: reduxState.mainReducer.user,
-        userPrivateKey: reduxState.mainReducer.userPrivateKey,
         storedMessages: reduxState.mainReducer.user.messages,
         storedMemberArray: reduxState.mainReducer.user.memberArray
     };
@@ -33,7 +28,6 @@ class ConnectedUserHomeScreen extends Component {
 
     state = {
         channel: null,
-        userPrivateKey: null,
         messages: [],
         memberArray: [],
         responseArray: [],
@@ -42,8 +36,6 @@ class ConnectedUserHomeScreen extends Component {
         isQrVisible: true,
         spinnerVisible: true,
         newestStoredMessageIndex: 0,
-        channelPrivateKey: null,
-        importedPublicKey: null,
     }
 
     componentDidMount() {
@@ -66,11 +58,7 @@ class ConnectedUserHomeScreen extends Component {
                         return twilio.createChannel(chatClient, this.props.user.upi, adminUpiArray)
                             .then(twilio.joinChannel)
                             .then(channel => {
-                                const channelPrivateKeyBytes = channel.attributes.privateKey;
-                                const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.userPrivateKey)
-                                const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
-                                const importedPublicKey = virgilCrypto.importPublicKey(channel.attributes.publicKey);
-                                this.setState({ channel, channelPrivateKey, importedPublicKey })
+                                this.setState({ channel })
                                 for (let i = 0; i < adminUpiArray.length; i++){
                                     channel.add(adminUpiArray[i])
                                     .then(() => {
@@ -103,11 +91,7 @@ class ConnectedUserHomeScreen extends Component {
                     
                 return twilio.findChannel(chatClient, this.props.user.upi)
                 .then(channel => {
-                    const channelPrivateKeyBytes = channel.attributes.privateKey;
-                    const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.userPrivateKey)
-                    const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
-                    const importedPublicKey = virgilCrypto.importPublicKey(channel.attributes.publicKey)
-                    this.setState({ channel, channelPrivateKey, importedPublicKey })
+                    this.setState({ channel })
                     this.configureChannelEvents(channel)
                     channel.getMessagesCount()
                         .then(channelMessageCount=>{
@@ -165,9 +149,9 @@ class ConnectedUserHomeScreen extends Component {
             }
 
             if (message.author === this.props.dasbyUpi) {
-                messageBody = this.parseDasbyPayloadData(this.decryptMessage(message.body), isLastMessage)
+                messageBody = this.parseDasbyPayloadData(message.body, isLastMessage)
             } else {
-                messageBody = this.parseUserPayloadData(this.decryptMessage(message.body))
+                messageBody = this.parseUserPayloadData(message.body)
             }
 
             return {
@@ -203,11 +187,6 @@ class ConnectedUserHomeScreen extends Component {
                     })
             }
         })
-    }
-
-    decryptMessage = (encrytpedMessage) => {
-        const decryptedMessage = virgilCrypto.decrypt(encrytpedMessage, this.state.channelPrivateKey).toString('utf8')
-        return decryptedMessage
     }
 
     canParseStr = str => {
@@ -301,9 +280,9 @@ class ConnectedUserHomeScreen extends Component {
     configureChannelEvents = (channel) => {
         channel.on('messageAdded', ({ author, body, index }) => {
             if (author === this.props.dasbyUpi) {
-                this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body), true), index })
+                this.addMessage({ author, body: this.parseDasbyPayloadData(body, true), index })
             } else {
-                this.addMessage({ author, body: this.parseUserPayloadData(this.decryptMessage(body)), index })
+                this.addMessage({ author, body: this.parseUserPayloadData(body), index })
             }
         })
 
@@ -330,8 +309,7 @@ class ConnectedUserHomeScreen extends Component {
 
     handleNewMessage = (text) => {
         if (this.state.channel) {
-            const encryptedMessage = virgilCrypto.encrypt(text, this.state.importedPublicKey)
-            this.state.channel.sendMessage(encryptedMessage.toString('base64'))
+            this.state.channel.sendMessage(text)
             setTimeout(() => {
                 this.setState({isQrVisible: false})
             }, 500);
@@ -359,25 +337,9 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     componentWillUnmount() {
-        // this.state.channel.removeListener('messageAdded', ({ author, body, index }) => {
-        //     if (author === this.props.dasbyUpi) {
-        //         this.addMessage({ author, body: this.parseDasbyPayloadData(this.decryptMessage(body)), index })
-        //     } else {
-        //         this.addMessage({ author, body: this.parseUserPayloadData(this.decryptMessage(body)), index })
-        //     }
-        // });
-        // this.state.channel.removeListener('typingStarted', member => {
-        //     //process the member to show typing
-        //     this.updateTypingIndicator(member, true);
-        // });
-        // this.state.channel.removeListener('typingEnded', member => {
-        //     //process the member to stop showing typing
-        //     this.updateTypingIndicator(member, false);
-        // });
 
         this.setState( {
             channel: null,
-            userPrivateKey: null,
             messages: [],
             memberArray: [],
             responseArray: [],
@@ -386,8 +348,6 @@ class ConnectedUserHomeScreen extends Component {
             isQrVisible: true,
             spinnerVisible: true,
             newestStoredMessageIndex: 0,
-            channelPrivateKey: null,
-            importedPublicKey: null
         })
     }
 

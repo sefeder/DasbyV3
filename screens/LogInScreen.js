@@ -1,18 +1,15 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { storeUserInfo, storeUserPrivateKey, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
-import { VirgilCrypto } from 'virgil-crypto';
+import { storeUserInfo, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage} from 'react-native';
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Spinner from 'react-native-loading-spinner-overlay';
 
-const virgilCrypto = new VirgilCrypto()
 
 function mapDispatchToProps(dispatch) {
     return {
         storeUserInfo: info => dispatch(storeUserInfo(info)),
-        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey)),
         storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
         storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
     };
@@ -36,8 +33,6 @@ class ConnectedLogInScreen extends Component {
 
     componentDidMount() {
         if (this.props.user.upi) {
-            const userPrivateKey = virgilCrypto.importPrivateKey(this.props.user.private_key, this.props.user.upi)
-            this.props.storeUserPrivateKey(userPrivateKey)
             if (this.props.user.role === 'user') {
                 this.props.navigation.navigate('UserHomeScreen')
             } else {
@@ -70,35 +65,24 @@ class ConnectedLogInScreen extends Component {
                 }
                 if (res.user.role === "user"){
                     this.props.storeUserInfo({...res.user, newUser: false})
-                    const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
-                    this.props.storeUserPrivateKey(userPrivateKey)
                     api.getDasbyUpi()
                         .then(dasbyInfo => {
-                            // console.log("Dasby UPI Retrieved: ", (Date.now() - startTime) / 1000)
                             this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
                         })
                         .catch(err => console.log(err))
                     this.setState({ spinnerVisible: false })
                     this.props.navigation.navigate('UserHomeScreen')
-                    // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
-                    // })
                 }
                 if (res.user.role === "admin"){
                     console.log("succesfully loged in as admin!")
                     this.props.storeUserInfo(res.user)
-                    const userPrivateKey = virgilCrypto.importPrivateKey(res.user.private_key, res.user.upi)
-                    this.props.storeUserPrivateKey(userPrivateKey)
-                    console.log("userPrivateKey: ", userPrivateKey)
                     api.getDasbyUpi()
                         .then(dasbyInfo => {
-                            // console.log("Dasby UPI Retrieved: ", (Date.now() - startTime) / 1000)
                             this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
                         })
                         .catch(err => console.log(err))
                     this.setState({ spinnerVisible: false })
                     this.props.navigation.navigate('AdminSelectionScreen')
-                    // AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
-                    // })
                 }
             })
             .catch(err => console.log(err))

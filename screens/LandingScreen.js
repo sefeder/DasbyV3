@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { storeUserInfo, storeUserPrivateKey, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
-import { VirgilCrypto } from 'virgil-crypto';
+import { storeUserInfo, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, AsyncStorage, Image, Dimensions, ImageBackground } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import api from '../utils/api';
@@ -9,7 +8,6 @@ import api from '../utils/api';
 function mapDispatchToProps(dispatch) {
     return {
         storeUserInfo: info => dispatch(storeUserInfo(info)),
-        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey)),
         storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
         storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
     };

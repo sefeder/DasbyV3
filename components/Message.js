@@ -1,8 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { StyleSheet, View, Text, Image } from 'react-native';
-import { VirgilCrypto } from 'virgil-crypto';
-import virgil from '../utils/virgilUtil';
 
 
 class Message extends Component {

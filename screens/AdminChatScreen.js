@@ -3,15 +3,12 @@ import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Tex
 import twilio from '../utils/twilioUtil';
 import { connect } from "react-redux";
 import { storePatientData } from "../redux/actions";
-import {VirgilCrypto} from 'virgil-crypto';
 import MessageForm from '../components/MessageForm';
 import MessageList from '../components/MessageList';
 import api from '../utils/api';
-import virgil from '../utils/virgilUtil';
 import MenuBar from '../components/MenuBar';
 import Spinner from 'react-native-loading-spinner-overlay';
 
-const virgilCrypto = new VirgilCrypto();
 
 function mapDispatchToProps(dispatch) {
     return {
@@ -21,7 +18,6 @@ function mapDispatchToProps(dispatch) {
 
 function mapStateToProps(reduxState) {
     return {
-        adminPrivateKey: reduxState.mainReducer.userPrivateKey,
         adminInfo: reduxState.mainReducer.user,
         storedPatientData: reduxState.mainReducer.storedPatientData,
     };
@@ -63,12 +59,8 @@ class ConnectedAdminChatScreen extends Component {
         let patientUpi = this.props.navigation.state.params.channelDescriptor.uniqueName
         this.state.channelDescriptor.getChannel()
         .then(channel => {
-            const channelPrivateKeyBytes = channel.attributes.privateKey;
-            const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.adminPrivateKey)
-            const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
-            const importedPublicKey = virgilCrypto.importPublicKey(channel.attributes.publicKey)
             this.configureChannelEvents(channel)
-            this.setState({ channel, channelPrivateKey, importedPublicKey })
+            this.setState({ channel })
             channel.getMessagesCount()
             .then(channelMessageCount => {
                 if (this.props.storedPatientData.hasOwnProperty(patientUpi)) {
@@ -156,18 +148,13 @@ class ConnectedAdminChatScreen extends Component {
         return result.items.map((message, i, items) => {
             return {
                 author: message.author,
-                body: this.parseIncomingPayloadData(this.decryptMessage(message.body)),
+                body: this.parseIncomingPayloadData(message.body),
                 me: message.author === this.props.adminInfo.upi,
                 sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
                 index: message.index,
                 timeStamp: message.timestamp,
             }
         })
-    }
-
-    decryptMessage = (encrytpedMessage) => {
-        const decryptedMessage = virgilCrypto.decrypt(encrytpedMessage, this.state.channelPrivateKey).toString('utf8')
-        return decryptedMessage
     }
 
     canParseStr = str => {
@@ -229,7 +216,7 @@ class ConnectedAdminChatScreen extends Component {
 
     configureChannelEvents = (channel) => {
         channel.on('messageAdded', ({ author, body, index }) => {
-            this.addMessage({ author, body: this.parseIncomingPayloadData(this.decryptMessage(body)), index })
+            this.addMessage({ author, body: this.parseIncomingPayloadData(body), index })
         })
 
         //set up the listener for the typing started Channel event
@@ -255,8 +242,7 @@ class ConnectedAdminChatScreen extends Component {
 
     handleNewMessage = (text) => {
         if (this.state.channel) {
-            const encryptedMessage = virgilCrypto.encrypt(text, this.state.importedPublicKey)
-            this.state.channel.sendMessage(encryptedMessage.toString('base64'))
+            this.state.channel.sendMessage(text)
         }
     }
 

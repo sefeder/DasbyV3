@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { storeUserInfo, storeUserPrivateKey, storeTwilioToken } from "../redux/actions";
+import { storeUserInfo, storeTwilioToken } from "../redux/actions";
 import { KeyboardAvoidingView, SafeAreaView, ScrollView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage } from 'react-native';
 import { Chance } from 'chance';
-import virgil from '../utils/virgilUtil';
-import { VirgilCrypto } from 'virgil-crypto';
 import api from '../utils/api';
 import RNPickerSelect from 'react-native-picker-select';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -13,7 +11,6 @@ function mapDispatchToProps(dispatch) {
     return {
         storeUserInfo: info => dispatch(storeUserInfo(info)),
         storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
-        storeUserPrivateKey: userPrivateKey => dispatch(storeUserPrivateKey(userPrivateKey))
     };
 }
 
@@ -116,27 +113,21 @@ class ConnectedSignUpScreen extends Component {
             role: this.state.roleInput
         })
             .then(res => {
-                virgil.initializeVirgil(res.user.upi)
-                    .then(updatedUser => {
-                        console.log("-- Virgil User Created, Public Card Returned!! --")
-                        if (this.state.roleInput === 'user') {
-                            // AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser), () => {
-                            // })
-                            const updatedNewUser = {...updatedUser.user, newUser: true}
-                            this.props.storeUserInfo(updatedNewUser)
-                            const virgilCrypto = new VirgilCrypto()
-                            const userPrivateKey = virgilCrypto.importPrivateKey(updatedNewUser.private_key, updatedNewUser.upi)
-                            this.props.storeUserPrivateKey(userPrivateKey)
-                            this.props.navigation.navigate('UserHomeScreen')
-                        }
-                        else if (this.state.roleInput === 'admin') {
-                            // AsyncStorage.setItem('userInfo', JSON.stringify(updatedUser), () => {
-                            // })
-                            this.props.storeUserInfo(updatedUser.user)
-                            this.props.navigation.navigate('AdminSelectionScreen')
-                        }
-                    })
-                    .catch(err => console.log('error line 51 SUS: ', err))
+                if (this.state.roleInput === 'user') {
+                    const updatedNewUser = { ...res.user, newUser: true }
+                    this.props.storeUserInfo(updatedNewUser)
+                    this.props.navigation.navigate('UserHomeScreen')
+                }
+                else if (this.state.roleInput === 'admin') {
+                    this.props.storeUserInfo(res.user)
+                    this.props.navigation.navigate('AdminSelectionScreen')
+                }
+                // virgil.initializeVirgil(res.user.upi)
+                //     .then(updatedUser => {
+                //         console.log("-- Virgil User Created, Public Card Returned!! --")
+                        
+                //     })
+                //     .catch(err => console.log('error line 51 SUS: ', err))
             })
             .catch(err => console.log('error line 53 SUS: ', err))
     }

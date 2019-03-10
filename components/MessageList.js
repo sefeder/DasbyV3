@@ -9,7 +9,6 @@ class MessageList extends Component {
 
     handleEndReached = () => {
         if (!this.props.loading && !this.onEndReachedCalledDuringMomentum){
-            console.log("hitting handleEndReached")
             this.props.getOlderMessages()
             this.onEndReachedCalledDuringMomentum = true;
         }

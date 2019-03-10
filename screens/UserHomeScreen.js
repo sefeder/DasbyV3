@@ -1,16 +1,13 @@
 import React, { Component } from 'react';
-import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, Dimensions, AsyncStorage } from 'react-native';
+import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, Dimensions, AsyncStorage } from 'react-native';
 import { connect } from "react-redux";
 import { storeUserInfo, storeDasbyUpi, storeUserPrivateKey } from "../redux/actions";
 import twilio from '../utils/twilioUtil';
 import { VirgilCrypto } from 'virgil-crypto';
-import MessageForm from '../components/MessageForm';
 import MessageList from '../components/MessageList';
 import api from '../utils/api';
-import virgil from '../utils/virgilUtil';
 import QuickReply from '../components/QuickReply';
 import Spinner from 'react-native-loading-spinner-overlay';
-import MenuBar from '../components/MenuBar';
 
 const virgilCrypto = new VirgilCrypto();
 
@@ -51,12 +48,6 @@ class ConnectedUserHomeScreen extends Component {
 
     componentDidMount() {
 
-        const startTime = Date.now();
-        console.log("----------------------------------------------------------")
-        console.log("hitting compoenentDidMount at: ", (Date.now()-startTime)/1000)
-        console.log("-------props----------")
-        console.log(this.props)
-
         AsyncStorage.getItem('responses', (err, responses) => {
             if (responses !== null) {
                 this.setState({ responseArray: JSON.parse(responses).responseArray, isQrVisible: JSON.parse(responses).isQrVisible}) 
@@ -66,7 +57,6 @@ class ConnectedUserHomeScreen extends Component {
         twilio.getTwilioToken(this.props.user.upi)
         .then(twilio.createChatClient)
         .then(chatClient => {
-            console.log("Twilio Chat Client Recieved: ", (Date.now() - startTime) / 1000)
             //chatClient.on('tokenExpired', )
             if (this.props.user.newUser) {
                 api.getAdmin()
@@ -76,15 +66,12 @@ class ConnectedUserHomeScreen extends Component {
                         return twilio.createChannel(chatClient, this.props.user.upi, adminUpiArray)
                             .then(twilio.joinChannel)
                             .then(channel => {
-                                console.log("New Twilio Channel Created and Joined Retrieved: ", (Date.now() - startTime) / 1000)
                                 const channelPrivateKeyBytes = channel.attributes.privateKey;
                                 const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.userPrivateKey)
                                 const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
                                 const importedPublicKey = virgilCrypto.importPublicKey(channel.attributes.publicKey);
                                 this.setState({ channel, channelPrivateKey, importedPublicKey })
-                                console.log("channel: ", channel)
                                 for (let i = 0; i < adminUpiArray.length; i++){
-                                    console.log("for loop, i=", i)
                                     channel.add(adminUpiArray[i])
                                     .then(() => {
                                             if (i === adminUpiArray.length-1){
@@ -101,17 +88,6 @@ class ConnectedUserHomeScreen extends Component {
 
             }
             else {
-                // get messages from asn
-                // if not null --> use/ set messages to state
-                // AsyncStorage.multiGet(['messages', 'memberArray'], (err, dataAsync) => {
-                //     const storedMessages = JSON.parse(dataAsync[0][1]);
-                //     const storedMemberArray = JSON.parse(dataAsync[1][1]);
-                //     console.log('dataAsync: ', dataAsync)
-                //     console.log('messages: ', storedMessages)
-                //     console.log('memberArray: ', storedMemberArray)
-                //     if (err) {
-                //         console.log('error getting messages from async: ', err)
-                console.log("this.props.storedMessages: ", this.props.storedMessages)
                 if (this.props.storedMessages) {
                     this.setState({ 
                         messages: this.props.storedMessages, 
@@ -127,9 +103,7 @@ class ConnectedUserHomeScreen extends Component {
                     
                 return twilio.findChannel(chatClient, this.props.user.upi)
                 .then(channel => {
-                    console.log("Twilio Channel Found: ", (Date.now() - startTime) / 1000)
                     const channelPrivateKeyBytes = channel.attributes.privateKey;
-                    console.log("this.props.userPrivateKey: ", this.props.userPrivateKey)
                     const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.userPrivateKey)
                     const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
                     const importedPublicKey = virgilCrypto.importPublicKey(channel.attributes.publicKey)
@@ -144,15 +118,11 @@ class ConnectedUserHomeScreen extends Component {
                                 this.getChannelMembers(channel)
                                 channel.getMessages(15)
                                 .then(result => {
-                                    console.log("result: ", result)
-                                    console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                                    console.log("----------------------------------------------------------------------------------------")
                                     this.setState({
                                         messages: this.mapThroughMessages(result)
                                     }, () => {
                                         //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                         this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
-                                        console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
                                         this.setState({
                                             spinnerVisible: false
                                         })
@@ -163,9 +133,6 @@ class ConnectedUserHomeScreen extends Component {
                             else{
                                 channel.getMessages(channelMessageCount - 1 - this.state.newestStoredMessageIndex, this.state.newestStoredMessageIndex + 1 , 'forward')
                                 .then(result => {
-                                    console.log("result: ", result)
-                                    console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                                    console.log("----------------------------------------------------------------------------------------")
                                     result === undefined ?
                                     // ___________the next line (to the ####### happens only if there were no new messages in twilio_______________
                                     this.setState({ messages: this.props.storedMessages, memberArray: this.props.storedMemberArray })
@@ -176,7 +143,6 @@ class ConnectedUserHomeScreen extends Component {
                                      memberArray: this.props.storedMemberArray }, ()=> {
                                         //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                          this.props.storeUserInfo({...this.props.user, messages: this.state.messages})
-                                         console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
                                          this.setState({
                                              spinnerVisible: false
                                          })
@@ -217,7 +183,6 @@ class ConnectedUserHomeScreen extends Component {
 
     getChannelMembers = (channel) => {
         channel.getMembers().then(result => {
-            console.log('result: ', result)
             let newMemberArray = []
             for (let i = 0; i < result.length; i++) {
                 api.getUser(result[i].identity)
@@ -241,9 +206,7 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     decryptMessage = (encrytpedMessage) => {
-        const decryptStartTime = Date.now();
         const decryptedMessage = virgilCrypto.decrypt(encrytpedMessage, this.state.channelPrivateKey).toString('utf8')
-        console.log("Message Decrypted: ", (Date.now() - decryptStartTime) / 1000)
         return decryptedMessage
     }
 
@@ -326,10 +289,8 @@ class ConnectedUserHomeScreen extends Component {
 
     updateTypingIndicator = (memberTyping, isTyping) => {
         if (isTyping) {
-            console.log('member typing: ', memberTyping.identity)
             this.setState({ isTyping: true, memberTyping: memberTyping.identity })
         } else {
-            console.log("ID " + memberTyping.identity + " has stopped typing")
             this.setState({ isTyping: false, memberTyping: memberTyping.identity })
         }
     }
@@ -444,8 +405,15 @@ class ConnectedUserHomeScreen extends Component {
                         Welcome Home {this.props.user.first_name}
                     </Text>
                     {this.state.messages&&this.state.memberArray&&
-                        <MessageList loading={this.state.loading} getOlderMessages={this.getOlderMessages} memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.user.upi} messages={this.state.messages} memberArray={this.state.memberArray} 
-                    />
+                        <MessageList
+                            loading={this.state.loading}
+                            getOlderMessages={this.getOlderMessages}
+                            memberTyping={this.state.memberTyping}
+                            isTyping={this.state.isTyping}
+                            upi={this.props.user.upi}
+                            messages={this.state.messages}
+                            memberArray={this.state.memberArray} 
+                        />
                     }
 
                     {this.state.responseArray.length !== 0 && this.state.isQrVisible &&
@@ -456,8 +424,6 @@ class ConnectedUserHomeScreen extends Component {
             </SafeAreaView>
         )
     }
-
-
 }
 const styles = StyleSheet.create({
     app: {

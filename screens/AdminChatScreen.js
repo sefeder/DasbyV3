@@ -39,7 +39,7 @@ class ConnectedAdminChatScreen extends Component {
         isTyping: false,
         memberTyping: null,
         spinnerVisible: true,
-        newestStoredMessageIndex: 0
+        newestStoredMessageIndex: 0,
     }
 
     // componentWillReceiveProps(nextProps) {
@@ -60,43 +60,22 @@ class ConnectedAdminChatScreen extends Component {
 
     componentDidMount() {
         const startTime = Date.now();
-        console.log("----------------------------------------------------------")
-        console.log("hitting compoenentDidMount at: ", (Date.now() - startTime) / 1000)
-        console.log("-------props----------")
-        console.log(this.props)
-        console.log('this.state.channelDescriptor: ', this.state.channelDescriptor)
-        // virgil.getPrivateKey(this.props.adminInfo.upi)
-        //     .then(adminPrivateKey => {
-        //         console.log("Virgil Private Key Retrieved: ", (Date.now() - startTime) / 1000)
-        //         this.setState({
-        //             adminPrivateKey: adminPrivateKey
-        //         })
-        //     })
-        //     .catch(err => console.log(err))
-        console.log("this.props.adminInfo: ", this.props.adminInfo)
         let patientUpi = this.props.navigation.state.params.channelDescriptor.uniqueName
-        console.log('SET TIMEOUT')
         this.state.channelDescriptor.getChannel()
         .then(channel => {
             const channelPrivateKeyBytes = channel.attributes.privateKey;
-            console.log("this.props.adminPrivateKey: ", this.props.adminPrivateKey)
             const decryptedChannelPrivateKeyBytes = virgilCrypto.decrypt(channelPrivateKeyBytes, this.props.adminPrivateKey)
             const channelPrivateKey = virgilCrypto.importPrivateKey(decryptedChannelPrivateKeyBytes);
             const importedPublicKey = virgilCrypto.importPublicKey(channel.attributes.publicKey)
-            console.log("Channel Gotten from Channel Descriptor: ", (Date.now() - startTime) / 1000)
             this.configureChannelEvents(channel)
             this.setState({ channel, channelPrivateKey, importedPublicKey })
             channel.getMessagesCount()
             .then(channelMessageCount => {
                 if (this.props.storedPatientData.hasOwnProperty(patientUpi)) {
                     //this determines if this is first time openning this patient chat, if it is, continue, if not, see line ~135
-                    console.log("that patient's data is stored in redux, baby!")
                     const newestStoredMessageIndex = this.props.storedPatientData[patientUpi].messages[this.props.storedPatientData[patientUpi].messages.length - 1].index
                         channel.getMessages(channelMessageCount - 1 - newestStoredMessageIndex, newestStoredMessageIndex + 1, 'forward')
                         .then(result => {
-                            console.log("result: ", result)
-                            console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                            console.log("----------------------------------------------------------------------------------------")
                             if(result === undefined){
                                 // if no new messages since last time selecting this patient
                                 this.setState({ messages: this.props.storedPatientData[patientUpi].messages, memberArray: this.props.storedPatientData[patientUpi].memberArray }, () => {
@@ -107,16 +86,7 @@ class ConnectedAdminChatScreen extends Component {
                             } else {
                                 // if new messages since last time selecting this patient
                                 this.setState({
-                                    messages: this.props.storedPatientData[patientUpi].messages.concat(result.items.map((message, i, items) => {
-                                        console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
-                                        return {
-                                            author: message.author,
-                                            body: this.parseIncomingPayloadData(this.decryptMessage(message.body)),
-                                            me: message.author === this.props.adminInfo.upi,
-                                            sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                            index: message.index
-                                        }
-                                    })),
+                                    messages: this.props.storedPatientData[patientUpi].messages.concat(this.mapThroughMessagesAdmin(result)),
                                     memberArray: this.props.storedPatientData[patientUpi].memberArray}, () => {
                                         let objectToStore = {
                                             selectedPatientUpi: this.state.selectedPatientUpi,
@@ -127,28 +97,15 @@ class ConnectedAdminChatScreen extends Component {
                                         this.setState({
                                             spinnerVisible: false
                                         })
-                                        console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
                                     }
                                 )
                             }
                         })
                                  
                 } else {
-                    console.log("that patient's data is NOT stored in redux :( ")
                     channel.getMessages(15).then(result => {
-                        console.log("Twilio Messages Retrieved: ", (Date.now() - startTime) / 1000)
-                        console.log("----------------------------------------------------------------------------------------")
                         this.setState({
-                            messages: result.items.map((message, i, items) => {
-                                console.log("Messages Map Function - message #", i, " at: ", (Date.now() - startTime) / 1000)
-                                return {
-                                    author: message.author,
-                                    body: this.parseIncomingPayloadData(this.decryptMessage(message.body)),
-                                    me: message.author === this.props.adminInfo.upi,
-                                    sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
-                                    index: message.index
-                                }
-                            })
+                            messages: this.mapThroughMessagesAdmin(result)
                         }, () => {
                                 // if (this.state.selectedPatientUpi) {
                                     let objectToStore = {
@@ -162,11 +119,9 @@ class ConnectedAdminChatScreen extends Component {
                             this.setState({
                                 spinnerVisible: false
                             })
-                            console.log("---------------------END SET STATE MESSAGES-----------------------", (Date.now() - startTime) / 1000)
                         })
                     })
                     channel.getMembers().then(result => {
-                        console.log("Channel Members Gotten: ", (Date.now() - startTime) / 1000)
                         let memberArray = []
                         result.forEach((member,i) => {
                             api.getUser(member.identity).then(dbUser => {
@@ -178,7 +133,6 @@ class ConnectedAdminChatScreen extends Component {
                                 memberArray.push(member)
                                 if (i === result.length-1) {
                                     this.setState({ memberArray }, () => {
-                                        console.log("Set State Member ", i, " at:", (Date.now() - startTime) / 1000)
                                         // if (this.state.selectedPatientUpi) {
                                             let objectToStore = {
                                                 // channelDescriptor: this.state.channelDescriptor,
@@ -197,6 +151,20 @@ class ConnectedAdminChatScreen extends Component {
             })
         }) 
     }
+
+    mapThroughMessagesAdmin = (result) => {
+        return result.items.map((message, i, items) => {
+            return {
+                author: message.author,
+                body: this.parseIncomingPayloadData(this.decryptMessage(message.body)),
+                me: message.author === this.props.adminInfo.upi,
+                sameAsPrevAuthor: items[i - 1] === undefined ? false : items[i - 1].author === message.author,
+                index: message.index,
+                timeStamp: message.timestamp,
+            }
+        })
+    }
+
     decryptMessage = (encrytpedMessage) => {
         const decryptedMessage = virgilCrypto.decrypt(encrytpedMessage, this.state.channelPrivateKey).toString('utf8')
         return decryptedMessage
@@ -233,7 +201,11 @@ class ConnectedAdminChatScreen extends Component {
 
 // may not need undefined clause in ternary below
     addMessage = (message) => {
-        const messageData = { ...message, index: message.index, me: message.author === this.props.adminInfo.first_name, sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author }
+        const messageData = {
+            ...message,
+            index: message.index,
+            me: message.author === this.props.adminInfo.first_name,
+            sameAsPrevAuthor: this.state.messages[this.state.messages.length - 1] === undefined ? false : this.state.messages[this.state.messages.length - 1].author === message.author }
         this.setState({
             messages: [...this.state.messages, messageData],
         },()=>{
@@ -249,10 +221,8 @@ class ConnectedAdminChatScreen extends Component {
 
     updateTypingIndicator = (memberTyping, isTyping) => {
         if (isTyping) {
-            console.log('member typing: ', memberTyping.identity)
             this.setState({ isTyping: true, memberTyping: memberTyping.identity })
         } else {
-            console.log("ID " + memberTyping.identity + " has stopped typing")
             this.setState({ isTyping: false, memberTyping: memberTyping.identity })
         }
     }
@@ -290,6 +260,27 @@ class ConnectedAdminChatScreen extends Component {
         }
     }
 
+    getOlderMessages = () => {
+        this.setState({ loading: true })
+        this.state.channel.getMessages(15, this.state.messages[0].index - 1)
+            .then(result => {
+                if (result) {
+                    this.setState({
+                        messages: this.mapThroughMessagesAdmin(result).concat(this.props.storedPatientData[this.state.selectedPatientUpi].messages),
+                    }, () => {
+                        this.setState({ loading: false })
+                        let objectToStore = {
+                            selectedPatientUpi: this.state.selectedPatientUpi,
+                            messages: this.state.messages,
+                            memberArray: this.state.memberArray
+                        }
+                        this.props.storePatientData(objectToStore)
+                    })
+                }
+            })
+
+    }
+
 render () {
     return (
         <SafeAreaView style={{ flex: 1 }}>
@@ -306,7 +297,17 @@ render () {
                 <Text>
                     Welcome Home {this.props.adminInfo.first_name}
                 </Text>
-                <MessageList memberTyping={this.state.memberTyping} isTyping={this.state.isTyping} upi={this.props.adminInfo.upi} messages={this.state.messages} memberArray={this.state.memberArray} />
+                {this.state.messages && this.state.memberArray &&
+                    <MessageList
+                    loading={this.state.loading}
+                    getOlderMessages={this.getOlderMessages}
+                    memberTyping={this.state.memberTyping}
+                    isTyping={this.state.isTyping}
+                    upi={this.props.adminInfo.upi}
+                    messages={this.state.messages}
+                    memberArray={this.state.memberArray}
+                    />
+                }
                 <MessageForm channel={this.state.channel} onMessageSend={this.handleNewMessage} />
             </KeyboardAvoidingView>
         </SafeAreaView>

@@ -95,7 +95,7 @@ export default class ResultsGraph extends Component {
     render() {
         return (
             <View style={styles.container}>
-                <VictoryChart
+                <VictoryChart width={Dimensions.get('window').width}
                     containerComponent={
                         <VictoryZoomVoronoiContainter
                             // activateData={false}
@@ -158,8 +158,8 @@ export default class ResultsGraph extends Component {
                             style={{ data: { fill: 'rgba(153, 246, 255, 1)' } }} />
                         <VictoryArea
                             data={[
-                                { x: 0, y: 25 },
-                                { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: 25 },
+                                { x: 0, y: 35 },
+                                { x: this.props.dataArray === null ? 1 : this.props.dataArray.length + 1, y: 35 },
                             ]}
                             style={{ data: { fill: 'rgba(83, 178, 222, 1)' } }} />
                     </VictoryStack>
@@ -173,6 +173,7 @@ export default class ResultsGraph extends Component {
                         <VictoryLine
                         />
                         <VictoryScatter
+                        domainPadding={{ x: 1 }}
                         // style={{
                         //     data: {
                         //         fill: (d) => (this.state.currentPoints[0] && d.date === this.state.currentPoints[0].date) ?  "blue" : "grey",

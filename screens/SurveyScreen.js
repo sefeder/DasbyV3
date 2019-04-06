@@ -77,7 +77,7 @@ export default class SurveyScreen extends Component {
             { this.state.currentQuestion &&
                 <View style={styles.questionAndAnswers}>
                     <Text style={styles.text}>
-                        {`${this.state.currentQuestion.questionNumber}) `}  
+                        {/* {`${this.state.currentQuestion.questionNumber}) `}   */}
                         {this.state.currentQuestion.questionDescription}
                     </Text>
                     <View>

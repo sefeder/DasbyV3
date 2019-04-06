@@ -117,13 +117,13 @@ class ConnectedUserHomeScreen extends Component {
                             else{
                                 channel.getMessages(channelMessageCount - 1 - this.state.newestStoredMessageIndex, this.state.newestStoredMessageIndex + 1 , 'forward')
                                 .then(result => {
-                                    result === undefined ?
+                                    !result.items.length ?
                                     // ___________the next line (to the ####### happens only if there were no new messages in twilio_______________
                                     this.setState({ messages: this.props.storedMessages, memberArray: this.props.storedMemberArray })
                                     :
                                     // __________everything below this line (to the ####) happens only if there were new messages in twilio__________
                                     this.setState({
-                                        messages: this.props.storedMessages.concat(this.mapThroughMessages(result),"new"),
+                                        messages: this.props.storedMessages.concat(this.mapThroughMessages(result, "new")),
                                      memberArray: this.props.storedMemberArray }, ()=> {
                                         //  AsyncStorage.setItem('messages', JSON.stringify(this.state.messages))
                                          this.props.storeUserInfo({...this.props.user, messages: this.state.messages})

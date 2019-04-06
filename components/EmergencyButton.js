@@ -57,13 +57,17 @@ export default class EmergencyButton extends Component {
                             }).catch(console.error)
                         }
                         if (buttonIndex === 1) {
-                            Linking.openURL('https://www.crisistextline.org/').catch(err => console.error('An error occurred', err));
+                            Linking.openURL(`sms:741741${getSMSDivider()}body=HOME`).catch(err => console.error('An error occurred', err));
                         }
                     }}
                 />
             </View>   
         )
     }
+}
+
+function getSMSDivider() {
+    return Platform.OS === "ios" ? "&" : "?";
 }
 
 const styles = StyleSheet.create({

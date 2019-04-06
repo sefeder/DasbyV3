@@ -38,7 +38,7 @@ class ConnectedMoreButton extends Component {
                         <View style={styles.iconTextView}>
                             <Icon style={{
                                 height: 33, width: 28.5
-                            }} size={37} name='ios-menu' />
+                            }} size={37} name='ios-more' />
                         </View>
                     </TouchableHighlight>
                     <ActionSheet

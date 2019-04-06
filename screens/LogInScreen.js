@@ -47,6 +47,7 @@ class ConnectedLogInScreen extends Component {
         this.setState({hiddenPass: !this.state.hiddenPass})
     }
     submitLogIn = () => {
+        console.log("submit button hit")
         this.setState({ spinnerVisible: true})
         api.logIn({
             email: this.state.emailInput,

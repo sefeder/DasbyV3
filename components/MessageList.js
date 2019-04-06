@@ -26,7 +26,7 @@ class MessageList extends Component {
                     onEndReached={this.handleEndReached}
                     onEndReachedThreshold={0.05}
                     onMomentumScrollBegin={() => { this.onEndReachedCalledDuringMomentum = false; }}
-                    keyExtractor={(item, index) => item.index.toString()}
+                    keyExtractor={(item) => item.index.toString()}
                     renderItem={({item, index})=>(
                         <Message
                             sameAsPrevAuthor={item.sameAsPrevAuthor}

@@ -118,6 +118,7 @@ class ConnectedResultsScreen extends Component {
                     values={['Chart', 'Table']}
                     selectedIndex={this.state.selectedIndex}
                     onTabPress={this.handleIndexChange}
+                    tabsContainerStyle={{height: 40}}
                 />
                 {this.state.selectedIndex === 0 ? 
                     <ResultsGraph dataArray={this.state.dataArray} />
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
         overflow: 'scroll',
         flexDirection: 'column',
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center'
     },
     container: {

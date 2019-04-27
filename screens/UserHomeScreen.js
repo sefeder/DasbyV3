@@ -59,7 +59,9 @@ class ConnectedUserHomeScreen extends Component {
                             .then(twilio.joinChannel)
                             .then(channel => {
                                 this.configureChannelEvents(channel)
-                                this.setState({ channel })
+                                this.setState({ channel }, ()=>{
+                                    this.props.storeUserInfo({ ...this.props.user, newUser: false })
+                                })
                                 for (let i = 0; i < adminUpiArray.length; i++){
                                     channel.add(adminUpiArray[i])
                                     .then(() => {
@@ -91,7 +93,6 @@ class ConnectedUserHomeScreen extends Component {
                     
                 return twilio.findChannel(chatClient, this.props.user.upi)
                 .then(channel => {
-                    console.log("channel-1:", channel)
                     this.setState({ channel })
                     this.configureChannelEvents(channel)
                     channel.getMessagesCount()
@@ -101,7 +102,6 @@ class ConnectedUserHomeScreen extends Component {
                         // __________________everything below this line (to the ^^^^^) happens only if there are no stored messages_______________________
                             if(this.state.newestStoredMessageIndex === 0){
                                 this.getChannelMembers(channel)
-                                console.log("channel-2:", channel)
                                 channel.getMessages(15)
                                 .then(result => {
                                     this.setState({
@@ -117,7 +117,6 @@ class ConnectedUserHomeScreen extends Component {
                             }
                             // __________________everything below this line (to the ^^^^^) happens only if there are stored messages________________________
                             else{
-                                console.log("channel-3:", channel)
                                 channel.getMessages(channelMessageCount - 1 - this.state.newestStoredMessageIndex, this.state.newestStoredMessageIndex + 1 , 'forward')
                                 .then(result => {
                                     !result.items.length ?

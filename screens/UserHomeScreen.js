@@ -27,7 +27,7 @@ function mapStateToProps(reduxState) {
 class ConnectedUserHomeScreen extends Component {
 
     state = {
-        channel: null,
+        channel: {},
         messages: [],
         memberArray: [],
         responseArray: [],
@@ -58,7 +58,10 @@ class ConnectedUserHomeScreen extends Component {
                         return twilio.createChannel(chatClient, this.props.user.upi, adminUpiArray)
                             .then(twilio.joinChannel)
                             .then(channel => {
-                                this.setState({ channel })
+                                this.configureChannelEvents(channel)
+                                this.setState({ channel }, ()=>{
+                                    this.props.storeUserInfo({ ...this.props.user, newUser: false })
+                                })
                                 for (let i = 0; i < adminUpiArray.length; i++){
                                     channel.add(adminUpiArray[i])
                                     .then(() => {
@@ -70,7 +73,6 @@ class ConnectedUserHomeScreen extends Component {
                                         }
                                     )
                                 }
-                                this.configureChannelEvents(channel)
                             })
                     })
 
@@ -321,25 +323,27 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     getOlderMessages = () => {
-        this.setState({loading: true})
-        this.state.channel.getMessages(15, this.state.messages[0].index - 1)
-            .then(result => {
-               if(result){
-                   this.setState({
-                       messages: this.mapThroughMessages(result,"old").concat(this.props.storedMessages),
-                   }, () => {
-                       this.setState({loading: false})
-                       this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
-                   })
-               }
-            })
+        if (Object.keys(this.state.channel).length){
+            this.setState({loading: true})
+            this.state.channel.getMessages(15, this.state.messages[0].index - 1)
+                .then(result => {
+                   if(result){
+                       this.setState({
+                           messages: this.mapThroughMessages(result,"old").concat(this.props.storedMessages),
+                       }, () => {
+                           this.setState({loading: false})
+                           this.props.storeUserInfo({ ...this.props.user, messages: this.state.messages })
+                       })
+                   }
+                })
+        }
         
     }
 
     componentWillUnmount() {
 
         this.setState( {
-            channel: null,
+            channel: {},
             messages: [],
             memberArray: [],
             responseArray: [],

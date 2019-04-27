@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { storeUserInfo, storeTwilioToken } from "../redux/actions";
+import { storeUserInfo, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
 import { KeyboardAvoidingView, SafeAreaView, ScrollView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage } from 'react-native';
 import { Chance } from 'chance';
 import api from '../utils/api';
@@ -114,6 +114,11 @@ class ConnectedSignUpScreen extends Component {
         })
             .then(res => {
                 if (this.state.roleInput === 'user') {
+                    api.getDasbyUpi()
+                        .then(dasbyInfo => {
+                            this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
+                        })
+                        .catch(err => console.log(err))
                     const updatedNewUser = { ...res.user, newUser: true }
                     this.props.storeUserInfo(updatedNewUser)
                     this.props.navigation.navigate('UserHomeScreen')

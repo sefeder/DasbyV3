@@ -65,7 +65,7 @@ class ConnectedLogInScreen extends Component {
                     return;
                 }
                 if (res.user.role === "user"){
-                    this.props.storeUserInfo({...res.user, newUser: false})
+                    this.props.storeUserInfo({ ...res.user, newUser: false })
                     api.getDasbyUpi()
                         .then(dasbyInfo => {
                             this.props.storeDasbyUpi(dasbyInfo.dasby.upi)

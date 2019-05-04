@@ -131,4 +131,24 @@ export default {
         })
             .then(res => res.json())
     },
+    updateUserByUpi: (upi, setKey, setValue) => {
+        return fetch(`${config.apiUrl}/database/users/update`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        upi: upi,
+                        setKey: setKey,
+                        setValue: setValue
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then( updatedUser => {
+                    console.log('Updated User', updatedUser)
+                })
+                .catch(err=>console.log(err))
+    }
 } 

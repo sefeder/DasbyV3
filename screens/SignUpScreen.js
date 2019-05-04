@@ -6,6 +6,7 @@ import { Chance } from 'chance';
 import api from '../utils/api';
 import RNPickerSelect from 'react-native-picker-select';
 import Icon from 'react-native-vector-icons/Ionicons';
+import PushNotifications from '../utils/notifications'
 
 function mapDispatchToProps(dispatch) {
     return {
@@ -113,6 +114,7 @@ class ConnectedSignUpScreen extends Component {
             role: this.state.roleInput
         })
             .then(res => {
+                PushNotifications.configurePushNotifications(res.user.upi)
                 if (this.state.roleInput === 'user') {
                     api.getDasbyUpi()
                         .then(dasbyInfo => {

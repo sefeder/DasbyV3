@@ -13,6 +13,7 @@ import ResultsScreen from './screens/ResultsScreen.js';
 import InfoScreen from './screens/InfoScreen.js';
 import EmergencyButton from './components/EmergencyButton';
 import MoreButton from './components/MoreButton';
+import pushNotifications from './utils/notifications';
 
 const RootStack = createStackNavigator(
   {
@@ -194,6 +195,8 @@ const RootStack = createStackNavigator(
 )
 
 export default class App extends React.Component {
+  componentDidMount(){
+  }
   render() {
     return (
       <RootStack/>

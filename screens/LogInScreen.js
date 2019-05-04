@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dim
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Spinner from 'react-native-loading-spinner-overlay';
-
+import PushNotifications from '../utils/notifications'
 
 function mapDispatchToProps(dispatch) {
     return {
@@ -33,6 +33,7 @@ class ConnectedLogInScreen extends Component {
 
     componentDidMount() {
         if (this.props.user.upi) {
+            PushNotifications.configurePushNotifications(this.props.user.upi)
             if (this.props.user.role === 'user') {
                 this.props.navigation.navigate('UserHomeScreen')
             } else {

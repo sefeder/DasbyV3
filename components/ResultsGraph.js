@@ -64,7 +64,7 @@ export default class ResultsGraph extends Component {
                             yMin={0}
                             yMax={100}
                             // numberOfTicks={10}
-                            
+                                                        
                         >
                             <Grid/>
                         </LineChart>

@@ -115,7 +115,9 @@ class ConnectedSignUpScreen extends Component {
         })
             .then(res => {
                 PushNotifications.configurePushNotifications(res.user.upi)
+                console.log("inside .then of createUser")
                 if (this.state.roleInput === 'user') {
+                    console.log("inside user if statement")
                     api.getDasbyUpi()
                         .then(dasbyInfo => {
                             this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
@@ -126,6 +128,7 @@ class ConnectedSignUpScreen extends Component {
                     this.props.navigation.navigate('UserHomeScreen')
                 }
                 else if (this.state.roleInput === 'admin') {
+                    console.log("inside admin if statement")
                     this.props.storeUserInfo(res.user)
                     this.props.navigation.navigate('AdminSelectionScreen')
                 }

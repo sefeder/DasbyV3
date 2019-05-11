@@ -20,7 +20,9 @@ createChannel = (chatClient, userUpi) => {
 }
 
 getTwilioToken = upi => { 
+    console.log("hitting getTwilioToken")
     return new Promise((resolve, reject) => {
+        console.log("inside getTwilioToken -- just before fetch. config.apiUrl:", config.apiUrl)
         fetch(`${config.apiUrl}/services/get-twilio-jwt`, {
             method: 'POST',
             headers: {

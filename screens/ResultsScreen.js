@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
         overflow: 'scroll',
         flexDirection: 'column',
         flex: 1,
-        justifyContent: 'space-between',
+        // justifyContent: 'space-between',
         alignItems: 'center'
     },
     container: {

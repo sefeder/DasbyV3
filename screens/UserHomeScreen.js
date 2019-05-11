@@ -39,7 +39,7 @@ class ConnectedUserHomeScreen extends Component {
     }
 
     componentDidMount() {
-
+        console.log("inside component did mount of userHomeScreen")
         AsyncStorage.getItem('responses', (err, responses) => {
             if (responses !== null) {
                 this.setState({ responseArray: JSON.parse(responses).responseArray, isQrVisible: JSON.parse(responses).isQrVisible}) 
@@ -50,6 +50,7 @@ class ConnectedUserHomeScreen extends Component {
         .then(twilio.createChatClient)
         .then(chatClient => {
             //chatClient.on('tokenExpired', )
+            console.log("inside .then of getTwilioToken")
             if (this.props.user.newUser) {
                 api.getAdmin()
                     .then(result => {
@@ -58,14 +59,19 @@ class ConnectedUserHomeScreen extends Component {
                         return twilio.createChannel(chatClient, this.props.user.upi, adminUpiArray)
                             .then(twilio.joinChannel)
                             .then(channel => {
+                                console.log("inside .then of create and join channel")
+                                console.log("adminUpiArray:", adminUpiArray)
                                 this.configureChannelEvents(channel)
                                 this.setState({ channel }, ()=>{
+                                    console.log("inside .then of setState for channel")
                                     this.props.storeUserInfo({ ...this.props.user, newUser: false })
                                 })
                                 for (let i = 0; i < adminUpiArray.length; i++){
                                     channel.add(adminUpiArray[i])
                                     .then(() => {
+                                            console.log("inside .then of channel.add adminUpiArray")
                                             if (i === adminUpiArray.length-1){
+                                                console.log("inside if statement in .then of channel.add adminUpiArray")
                                                 this.getChannelMembers(channel)
                                                 this.setState({ spinnerVisible: false })
                                                 api.dasbyRead(channel.sid, "0", 0, 0)

@@ -8,7 +8,7 @@ import 'moment-timezone';
 // import React, { Component } from 'react';
 // import { ART } from 'react-native';
 
-const { Group, Shape, Surface } = ART;
+const { Group, Shape, Surface, Circle } = ART;
 import * as scale from 'd3-scale';
 import * as shape from 'd3-shape';
 import * as d3Array from 'd3-array';
@@ -22,7 +22,7 @@ const d3 = {
 //=========================================================================
 
 const window = Dimensions.get('window');
-const yAxisWidth = 30;
+const yAxisWidth = 35;
 const xAxisHeight = 30;
 const graphHeight = window.height*0.35 - xAxisHeight
 
@@ -34,7 +34,9 @@ for(let i=0; i<=100;i=i+20){
     })
 }
 const xLabelWidth = 60;
-const yLabelHeight = graphHeight/(yAxisLabelArray.length-1);
+const graphTopPadding = 10
+const graphBottomPadding = 10
+const yLabelHeight = (graphHeight-graphTopPadding-graphBottomPadding)/(yAxisLabelArray.length-1);
 
 //=========================================================================
 
@@ -98,7 +100,7 @@ export default class ResultsGraph extends Component {
             },
             {
                 date: 10,
-                severity: 40
+                severity: 0
             },
             {
                 date: 11,
@@ -143,7 +145,7 @@ export default class ResultsGraph extends Component {
         // Create our y-scale.
         const scaleY = d3.scale.scaleLinear()
             .domain([0, 100])
-            .range([graphHeight,0])
+            .range([graphHeight-graphBottomPadding,graphTopPadding])
         const lineShape = d3.shape
             .line()
             .x(d => scaleX(d.date))
@@ -159,8 +161,6 @@ export default class ResultsGraph extends Component {
                 label: i
             })
         }
-
-        
         return (
             // <View style={{flexDirection: 'row', height: 440}}>
             //     <YAxis
@@ -227,9 +227,28 @@ export default class ResultsGraph extends Component {
                             style={styles.graphSurface}
                         >
                             <Group x={0} y={0}>
-                                <Shape d={linePath} stroke="#000" strokeWidth={5} />
+                                <Shape d={linePath} stroke="#000" strokeWidth={2.5} />
+                                
                             </Group>
+
                         </Surface>
+                        {dummyData.map((datum, index)=>  {
+                                    const dotStyle = {};
+                                    dotStyle.position = "absolute"
+                                    dotStyle.bottom = graphHeight-scaleY(datum.severity)+xAxisHeight-5;
+                                    dotStyle.left = scaleX(datum.date)-5;
+                                    return [
+                                        <TouchableHighlight
+                                            key={index} 
+                                            style={[dotStyle, styles.dots]}
+                                            onPress={()=>console.log('Ouch')}
+                                        >
+                                            <View
+                                                
+                                            />
+                                        </TouchableHighlight>
+                                    ]
+                                })}
                         <View 
                             key={'xAxisLabelsContainer'}
                             style={styles.xAxisLabelsContainer}
@@ -267,6 +286,7 @@ const styles = StyleSheet.create({
     // },
     graphContainer:{
         flexDirection: "row",
+        marginTop: 20
     },
     graphSurface: {
         backgroundColor: "purple",
@@ -275,7 +295,11 @@ const styles = StyleSheet.create({
         flexDirection: "column-reverse",
         width: yAxisWidth,
         height: graphHeight,
-        alignItems: "flex-end"
+        alignItems: "flex-end",
+        position: "relative",
+        bottom: (yLabelHeight/2) - graphBottomPadding,
+        paddingRight: 5,
+
     },
     graphScrollView: {
         height: graphHeight + xAxisHeight,
@@ -288,11 +312,13 @@ const styles = StyleSheet.create({
         height: xAxisHeight,
         display: "flex",
         flexDirection: "row",
-        flexWrap: "nowrap"
+        flexWrap: "nowrap",
+        borderTopWidth: 1,
+        paddingTop: 5
     },
     tickLabelY:{
         flexDirection: "row",
-        alignItems: "flex-end",
+        alignItems: "center",
         height: yLabelHeight,
         fontSize: 18,
     },
@@ -305,5 +331,12 @@ const styles = StyleSheet.create({
         fontSize: 18,
         // textAlign: 'center',
       },
+    dots: {
+        // position: 'absolute',
+        width: 10,
+        height: 10,
+        backgroundColor: "orange",
+        borderRadius: 100, 
+    },
 
 });

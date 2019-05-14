@@ -235,16 +235,17 @@ export default class ResultsGraph extends Component {
                         {dummyData.map((datum, index)=>  {
                                     const dotStyle = {};
                                     dotStyle.position = "absolute"
-                                    dotStyle.bottom = graphHeight-scaleY(datum.severity)+xAxisHeight-5;
-                                    dotStyle.left = scaleX(datum.date)-5;
+                                    dotStyle.bottom = graphHeight-scaleY(datum.severity)+xAxisHeight-25;
+                                    dotStyle.left = scaleX(datum.date)-25;
                                     return [
                                         <TouchableHighlight
                                             key={index} 
-                                            style={[dotStyle, styles.dots]}
+                                            underlayColor="rgba(0,0,0,0)"
+                                            style={[dotStyle, styles.dotContainers]}
                                             onPress={()=>console.log('Ouch')}
                                         >
                                             <View
-                                                
+                                                style={styles.dots}
                                             />
                                         </TouchableHighlight>
                                     ]
@@ -331,6 +332,15 @@ const styles = StyleSheet.create({
         fontSize: 18,
         // textAlign: 'center',
       },
+    dotContainers: {
+        // position: 'absolute',
+        width: 50,
+        height: 50,
+        backgroundColor: "rgba(0,0,0,0)",
+        borderRadius: 100,
+        alignItems: "center",
+        justifyContent: "center", 
+    },
     dots: {
         // position: 'absolute',
         width: 10,

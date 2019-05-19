@@ -22,7 +22,7 @@ const d3 = {
 //=========================================================================
 
 const window = Dimensions.get('window');
-const yAxisWidth = 35;
+const yAxisWidth = 40;
 const xAxisHeight = 30;
 const graphHeight = window.height*0.35 - xAxisHeight
 
@@ -33,11 +33,11 @@ for(let i=0; i<=100;i=i+20){
         label: i
     })
 }
-const xLabelWidth = 60;
+const xScalePix = 40
 const graphTopPadding = 10
 const graphBottomPadding = 10
 const yLabelHeight = (graphHeight-graphTopPadding-graphBottomPadding)/(yAxisLabelArray.length-1);
-
+const yGridLinesArray = [0,10,20,30,40,50,60,70,80,90,100]
 //=========================================================================
 
 export default class ResultsGraph extends Component {
@@ -111,7 +111,7 @@ export default class ResultsGraph extends Component {
                 severity: 30
             },
         ]
-        const xScalePix = 60
+        
         const numberOfPoints = dummyData.length
         const firstX = dummyData[0].date - 1
         const lastX = dummyData[numberOfPoints-1].date + 1
@@ -161,6 +161,15 @@ export default class ResultsGraph extends Component {
                 label: i
             })
         }
+        let yGridLinesPathArray = []
+        for(let i=0;i<yGridLinesArray.length;i++){
+            const path = lineShape([
+                {date: firstX, severity: yGridLinesArray[i]},
+                {date: lastX, severity: yGridLinesArray[i]}
+            ])
+            yGridLinesPathArray.push(path)
+        }
+        
         return (
             // <View style={{flexDirection: 'row', height: 440}}>
             //     <YAxis
@@ -210,13 +219,23 @@ export default class ResultsGraph extends Component {
                                 <Text style={styles.tickLabelYText}>
                                     {tick.label}
                                 </Text>
+                                <View style={styles.tickLabelYLine}>
+
+                                </View>
+                                
                             </View>
                             );
                         })}
                 </View>
+                <View
+                    style={styles.yAxisLine}
+                >
+
+                </View>
                 <ScrollView 
                     style={styles.graphScrollView} 
                     horizontal
+                    showsHorizontalScrollIndicator={false}
                 >
                     <View
                         style={styles.surfaceAndxAxisContainer} 
@@ -228,7 +247,11 @@ export default class ResultsGraph extends Component {
                         >
                             <Group x={0} y={0}>
                                 <Shape d={linePath} stroke="#000" strokeWidth={2.5} />
-                                
+                                {yGridLinesPathArray.map((gridLinePath,index)=>{
+                                    return(
+                                        <Shape key={index} d={gridLinePath} stroke="#000" strokeWidth={0.5} /> 
+                                    )
+                                })}
                             </Group>
 
                         </Surface>
@@ -255,14 +278,13 @@ export default class ResultsGraph extends Component {
                             style={styles.xAxisLabelsContainer}
                         >
                         {xAxisLabelArray.map((tick, index) => {
-                            const tickStyles = {};
-                            tickStyles.width = xLabelWidth;
-                
                             return (
-                            <Text key={index} style={[styles.tickLabelX, tickStyles]}>
-                                {tick.label}
-                            </Text>
-                            );
+                            <View key={index} style={styles.tickLabelX}>
+                                <Text style={styles.tickLabelXText}>
+                                    {tick.label}
+                                </Text>
+                            </View>
+                        );
                         })}
                         </View>
                     </View>
@@ -290,7 +312,7 @@ const styles = StyleSheet.create({
         marginTop: 20
     },
     graphSurface: {
-        backgroundColor: "purple",
+        // backgroundColor: "purple",
     },
     yAxisLabelsContainer:{
         flexDirection: "column-reverse",
@@ -301,6 +323,16 @@ const styles = StyleSheet.create({
         bottom: (yLabelHeight/2) - graphBottomPadding,
         paddingRight: 5,
 
+    },
+    yAxisLine:{
+        height: graphHeight,
+        width: 2,
+        borderRightWidth: 1,
+        shadowOffset: {height:0, width: 2},
+        shadowRadius: 2,
+        shadowColor: "black",
+        shadowOpacity: 1,
+        zIndex: 3
     },
     graphScrollView: {
         height: graphHeight + xAxisHeight,
@@ -314,23 +346,33 @@ const styles = StyleSheet.create({
         display: "flex",
         flexDirection: "row",
         flexWrap: "nowrap",
-        borderTopWidth: 1,
         paddingTop: 5
     },
     tickLabelY:{
         flexDirection: "row",
         alignItems: "center",
         height: yLabelHeight,
-        fontSize: 18,
+        fontSize: 16,
     },
     tickLabelYText:{
-        fontSize: 18,
+        fontSize: 16,
+    },
+    tickLabelYLine:{
+        backgroundColor: "black",
+        right: -7,
+        width: 5,
+        height: 2,
     },
     tickLabelX: {
         position: 'relative',
         bottom: 0,
-        fontSize: 18,
+        right: xScalePix/2,
+        width: xScalePix, 
+        alignItems: "center",
         // textAlign: 'center',
+      },
+    tickLabelXText: {
+        fontSize: 16,
       },
     dotContainers: {
         // position: 'absolute',

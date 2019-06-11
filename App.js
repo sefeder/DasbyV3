@@ -11,6 +11,7 @@ import AdminChatScreen from './screens/AdminChatScreen.js';
 import SurveyScreen from './screens/SurveyScreen.js';
 import ResultsScreen from './screens/ResultsScreen.js';
 import InfoScreen from './screens/InfoScreen.js';
+import BpInputScreen from './screens/BpInputScreen.js';
 import EmergencyButton from './components/EmergencyButton';
 import MoreButton from './components/MoreButton';
 import pushNotifications from './utils/notifications';
@@ -168,6 +169,18 @@ const RootStack = createStackNavigator(
           ),
         };
       }
+      },
+    BpInputScreen:
+      {
+        screen: BpInputScreen,
+        navigationOptions: ({ navigation }) => {
+          return {
+            headerTitle: 'Blood Pressure',
+            headerRight: (
+              <EmergencyButton />
+            ),
+          };
+        }
       },
     SurveyScreen:
       {

@@ -47,21 +47,25 @@ class ConnectedMoreButton extends Component {
                         title={<Text>OPTIONS</Text>}
                         options={[
                             'Take a Survey',
+                            'Record Blood Pressure',
                             'Study Info',
                             'Log Out',
                             'Cancel'
                         ]}
-                        cancelButtonIndex={3}
-                        destructiveButtonIndex={3}
+                        cancelButtonIndex={4}
+                        destructiveButtonIndex={4}
                         onPress={(buttonIndex) => {
                             console.log('button clicked :', buttonIndex);
                             if (buttonIndex === 0) {
                                 this.props.navigation.navigate('SurveyScreen', { upi: this.props.user.upi})
                             }
                             if (buttonIndex === 1) {
-                                this.props.navigation.navigate('InfoScreen')
+                                this.props.navigation.navigate('BpInputScreen')
                             }
                             if (buttonIndex === 2) {
+                                this.props.navigation.navigate('InfoScreen')
+                            }
+                            if (buttonIndex === 3) {
                                 AsyncStorage.clear()
                                 this.props.clearStore()
                                 // persistor.purge()

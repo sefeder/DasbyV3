@@ -22,7 +22,7 @@ const d3 = {
 //=========================================================================
 
 const window = Dimensions.get('window');
-const yAxisWidth = 35;
+const yAxisWidth = 40;
 const xAxisHeight = 30;
 const graphHeight = window.height*0.35 - xAxisHeight
 
@@ -33,11 +33,12 @@ for(let i=0; i<=100;i=i+20){
         label: i
     })
 }
-const xLabelWidth = 60;
+const xScalePix = 20
 const graphTopPadding = 10
 const graphBottomPadding = 10
 const yLabelHeight = (graphHeight-graphTopPadding-graphBottomPadding)/(yAxisLabelArray.length-1);
-
+const yGridLinesArray = [0,10,20,30,40,50,60,70,80,90,100]
+const numDaysBetweenXTicks = 4
 //=========================================================================
 
 export default class ResultsGraph extends Component {
@@ -47,7 +48,26 @@ export default class ResultsGraph extends Component {
         currentIndex: 0,
         currentPoints: [],
         selectedDatum: {},
-        lockedOut: false
+        lockedOut: false,
+
+        xViewRangeMax: window.width,
+        scaleX: null,
+        scaleY: null,
+        linePath: null,
+        xAxisLabelArray: [],
+        yGridLinesPathArray: [],
+        hasData: false
+    }
+    componentDidMount(){
+        console.log("hitting componentDidMount")
+        this.determineGraphProperties()
+    }
+
+    componentDidUpdate(prevProps){
+        if (prevProps !== this.props){
+            console.log("hitting componentDidUpdate")
+            this.determineGraphProperties()
+        }
     }
 
     // componentDidMount() {
@@ -69,78 +89,27 @@ export default class ResultsGraph extends Component {
         }
     }
 
-    
-
-    render() {
-            
-        const dummyData = [
-            {
-                date: 1,
-                severity: 50
-            },
-            {
-                date: 2,
-                severity: 20
-            },
-            {
-                date: 3,
-                severity: 70
-            },
-            {
-                date: 5,
-                severity: 80
-            },
-            {
-                date: 6,
-                severity: 80
-            },
-            {
-                date: 7,
-                severity: 50
-            },
-            {
-                date: 10,
-                severity: 0
-            },
-            {
-                date: 11,
-                severity: 100
-            },
-            {
-                date: 15,
-                severity: 30
-            },
-        ]
-        const xScalePix = 60
+    determineGraphProperties = ()=>{
+        console.log("hitting determineGraphProperties")
+        if(this.props.dataArray.length == 0){
+            return
+        }            
+        const dummyData = this.props.dataArray
         const numberOfPoints = dummyData.length
-        const firstX = dummyData[0].date - 1
-        const lastX = dummyData[numberOfPoints-1].date + 1
-        let xViewDomainMin = firstX //x min value
-        let xViewDomainMax = lastX  //x max value
+        const firstX = dummyData[0].date - (1000*60*60*24)
+        const lastX = dummyData[numberOfPoints-1].date +(1000*60*60*24)
+        let xViewDomainMin = Math.ceil(firstX/(1000*60*60*24)) //x min value
+        let xViewDomainMax = Math.ceil(lastX/(1000*60*60*24))  //x max value
         let xViewRangeMin = 0   //x min pixel length
-        let xViewRangeMax = (lastX-firstX)*xScalePix //x max pixel length  
-        // const lineChartData = this.props.dataArray.map(dataPoint=>dataPoint.severity)
-        // console.log('lineChartData: ', lineChartData)
-        // const axesSvg = { fontSize: 15, fill: 'grey' };
-        // const verticalContentInset = { top: 7, bottom: 7 }
-        // const xAxisHeight = 30
-        // const yRange = scale.scaleLinear([0, 100], [0, 100]);
-        // Get last item in the array.
-        //============================
-        const data = this.props.dataArray
-        const lastDatum = data[data.length - 1];
-        //=============================
+        let xViewRangeMax = (xViewDomainMax-xViewDomainMin)*xScalePix //x max pixel length  
         // Create our x-scale.
-        const scaleX = d3.scale.scaleLinear()
-            .domain([xViewDomainMin, xViewDomainMax])
+        console.log("xViewDomainMin:", xViewDomainMin)
+        console.log("xViewDomainMax:", xViewDomainMax)
+        console.log("firstX:", firstX)
+        console.log("lastX:", lastX)
+        const scaleX = d3.scale.scaleTime()
+            .domain([new Date(firstX), new Date (lastX)])
             .range([xViewRangeMin, xViewRangeMax])
-        // // Collect all y values.
-        // const allYValues = data.reduce((all, datum) => {
-        //     all.push(datum.temperatureMax);
-        //     return all;
-        // }, []);
-        // // Get the min and max y value.
-        // const extentY = d3Array.extent(allYValues);
 
         // Create our y-scale.
         const scaleY = d3.scale.scaleLinear()
@@ -151,16 +120,37 @@ export default class ResultsGraph extends Component {
             .x(d => scaleX(d.date))
             .y(d => scaleY(d.severity));
         const linePath = lineShape(dummyData)
-        // const dAttribute={
-        //     path: linePath
-        // }
         let xAxisLabelArray = []
-        for(let i=firstX; i<lastX;i++){
+        for(let i=xViewDomainMin; i<xViewDomainMax;i=i+numDaysBetweenXTicks){
+            console.log("i:", i)
             xAxisLabelArray.push({
                 xPosition: i,
-                label: i
+                label: moment(i*(1000*60*60*24)).format("M/DD")
             })
         }
+        let yGridLinesPathArray = []
+        for(let i=0;i<yGridLinesArray.length;i++){
+            const path = lineShape([
+                {date: firstX, severity: yGridLinesArray[i]},
+                {date: lastX, severity: yGridLinesArray[i]}
+            ])
+            yGridLinesPathArray.push(path)
+        }
+        this.setState({
+            dataArray: dummyData,
+            xViewRangeMax,
+            scaleX,
+            scaleY,
+            linePath,
+            xAxisLabelArray,
+            yGridLinesPathArray,
+            hasData: true
+        })
+    }
+
+    render() {
+
+        
         return (
             // <View style={{flexDirection: 'row', height: 440}}>
             //     <YAxis
@@ -210,39 +200,60 @@ export default class ResultsGraph extends Component {
                                 <Text style={styles.tickLabelYText}>
                                     {tick.label}
                                 </Text>
+                                <View style={styles.tickLabelYLine}>
+                                </View>
                             </View>
                             );
                         })}
                 </View>
+                <View
+                    style={styles.yAxisLine}
+                >
+
+                </View>
                 <ScrollView 
                     style={styles.graphScrollView} 
                     horizontal
+                    showsHorizontalScrollIndicator={false}
                 >
+                {this.state.hasData ?
                     <View
                         style={styles.surfaceAndxAxisContainer} 
                     >
                         <Surface 
-                            width={xViewRangeMax} 
+                            width={this.state.xViewRangeMax} 
                             height={graphHeight}
                             style={styles.graphSurface}
                         >
                             <Group x={0} y={0}>
-                                <Shape d={linePath} stroke="#000" strokeWidth={2.5} />
-                                
+                                <Shape d={this.state.linePath} stroke="#000" strokeWidth={2.5} />
+                                {this.state.yGridLinesPathArray.map((gridLinePath,index)=>{
+                                    return(
+                                        <Shape key={index} d={gridLinePath} stroke="#000" strokeWidth={0.5} /> 
+                                    )
+                                })}
                             </Group>
 
                         </Surface>
-                        {dummyData.map((datum, index)=>  {
+                        {this.state.dataArray.map((datum, index)=>  {
                                     const dotStyle = {};
                                     dotStyle.position = "absolute"
-                                    dotStyle.bottom = graphHeight-scaleY(datum.severity)+xAxisHeight-25;
-                                    dotStyle.left = scaleX(datum.date)-25;
+                                    dotStyle.bottom = graphHeight-this.state.scaleY(datum.severity)+xAxisHeight-25;
+                                    dotStyle.left = this.state.scaleX(datum.date)-25;
                                     return [
                                         <TouchableHighlight
+                                            // ref={a=>this.dataPoint=a}
                                             key={index} 
                                             underlayColor="rgba(0,0,0,0)"
                                             style={[dotStyle, styles.dotContainers]}
-                                            onPress={()=>console.log('Ouch')}
+                                            onPress={(event)=>{
+                                                console.log('Ouch')
+                                                console.log("this:", this)
+                                                console.log("datum:", datum)
+                                                console.log("event:", event)
+                                                this.props.handlePointTouch(datum)
+                                            }}
+                                            data={datum}
                                         >
                                             <View
                                                 style={styles.dots}
@@ -254,18 +265,23 @@ export default class ResultsGraph extends Component {
                             key={'xAxisLabelsContainer'}
                             style={styles.xAxisLabelsContainer}
                         >
-                        {xAxisLabelArray.map((tick, index) => {
-                            const tickStyles = {};
-                            tickStyles.width = xLabelWidth;
-                
+                        {this.state.xAxisLabelArray.map((tick, index) => {
                             return (
-                            <Text key={index} style={[styles.tickLabelX, tickStyles]}>
-                                {tick.label}
-                            </Text>
-                            );
+                            <View key={index} style={styles.tickLabelX}>
+                                <View style={styles.tickLabelXLine}>
+                                </View>
+                                <Text style={styles.tickLabelXText}>
+                                    {tick.label}
+                                </Text>
+                            </View>
+                        );
                         })}
                         </View>
                     </View>
+
+                :
+                    <Text>No Data</Text>
+                }
                 </ScrollView>
             </View>
             
@@ -290,7 +306,7 @@ const styles = StyleSheet.create({
         marginTop: 20
     },
     graphSurface: {
-        backgroundColor: "purple",
+        // backgroundColor: "purple",
     },
     yAxisLabelsContainer:{
         flexDirection: "column-reverse",
@@ -301,6 +317,16 @@ const styles = StyleSheet.create({
         bottom: (yLabelHeight/2) - graphBottomPadding,
         paddingRight: 5,
 
+    },
+    yAxisLine:{
+        height: graphHeight,
+        width: 2,
+        borderRightWidth: 1,
+        shadowOffset: {height:0, width: 2},
+        shadowRadius: 2,
+        shadowColor: "black",
+        shadowOpacity: 1,
+        zIndex: 3
     },
     graphScrollView: {
         height: graphHeight + xAxisHeight,
@@ -314,23 +340,40 @@ const styles = StyleSheet.create({
         display: "flex",
         flexDirection: "row",
         flexWrap: "nowrap",
-        borderTopWidth: 1,
         paddingTop: 5
     },
     tickLabelY:{
         flexDirection: "row",
         alignItems: "center",
         height: yLabelHeight,
-        fontSize: 18,
+        fontSize: 16,
     },
     tickLabelYText:{
-        fontSize: 18,
+        fontSize: 16,
+    },
+    tickLabelYLine:{
+        backgroundColor: "black",
+        right: -7,
+        width: 7,
+        height: 2,
+    },
+    tickLabelXLine:{
+        backgroundColor: "black",
+        top: -5,
+        width: 2,
+        height: 7,
     },
     tickLabelX: {
+        flexDirection: 'column',
         position: 'relative',
-        bottom: 0,
-        fontSize: 18,
+        bottom: 10,
+        right: (xScalePix*numDaysBetweenXTicks)/2,
+        width: xScalePix*numDaysBetweenXTicks, 
+        alignItems: "center",
         // textAlign: 'center',
+      },
+    tickLabelXText: {
+        fontSize: 16,
       },
     dotContainers: {
         // position: 'absolute',

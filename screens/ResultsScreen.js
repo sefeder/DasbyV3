@@ -34,7 +34,8 @@ class ConnectedResultsScreen extends Component {
         currentPoints: [],
         selectedDatum: {},
         lockedOut: false,
-        selectedIndex: 0
+        selectedIndex: 0,
+        currentDatum: {}
     }
 
     componentDidMount() {
@@ -92,7 +93,9 @@ class ConnectedResultsScreen extends Component {
 
     createDataArray = (results) => {
         const dataArray = results.slice(0).reverse().map((result, idx, array) => {
-            return { date: result.createdAt, severity: result.severity }
+            return { 
+                date: new Date(result.createdAt).getTime(), 
+                severity: result.severity }
         })
         return dataArray;
 
@@ -109,6 +112,10 @@ class ConnectedResultsScreen extends Component {
             Orientation.lockToPortrait;
         }
     };
+
+    handlePointTouch = (datum)=>{
+        this.setState({currentDatum: datum})
+    }
     
 
     render() {
@@ -120,8 +127,11 @@ class ConnectedResultsScreen extends Component {
                     onTabPress={this.handleIndexChange}
                     tabsContainerStyle={{height: 40}}
                 />
-                {this.state.selectedIndex === 0 ? 
-                    <ResultsGraph dataArray={this.state.dataArray} />
+                {this.state.selectedIndex === 0 ?
+                    <View>
+                        <ResultsGraph dataArray={this.state.dataArray} handlePointTouch={this.handlePointTouch}/>
+                        {this.state.currentDatum && <Text style={{fontSize: 30}}>{this.state.currentDatum.severity}</Text>}
+                    </View> 
                 :
                     <ScrollView style={{flex:1, backgroundColor: 'white'}}>
                         { this.state.results && this.state.results.map((result, idx, resultArray) => {

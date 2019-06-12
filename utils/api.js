@@ -168,6 +168,7 @@ export default {
             .then(res => res.json())
             .then(savedBpMesurement => {
                 console.log('saved BP: ', savedBpMesurement)
+                return savedBpMesurement
             })
             .catch(err => console.log(err))
     }

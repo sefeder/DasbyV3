@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
 import { storeUserInfo, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
-import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage } from 'react-native';
+import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage, Alert } from 'react-native';
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Spinner from 'react-native-loading-spinner-overlay';
@@ -32,6 +32,29 @@ class ConnectedBpInput extends Component {
     componentDidMount() {
     }
 
+    determineMessage = (diagnosis)=>{
+        let message;
+        switch (diagnosis){
+            case 1: 
+                message = "Your blood pressure reading is normal"
+                break;
+            case 2:
+                message = "Your blood pressure reading is Elevated"
+                break;
+            case 3:
+                message = "Your blood pressure reading indicates Hypertension Stage 1"
+                break;
+            case 4:
+                message = "Your blood pressure reading indicates Hypertension Stage 2"
+                break;
+            default:
+                message = "Something went wrong..."
+                break;
+
+        }
+        return message
+    }
+
     submitBp = () => {
         if (this.state.systolic === "" || this.state.diastolic === "" ){
             this.setState({
@@ -42,8 +65,23 @@ class ConnectedBpInput extends Component {
             return;
         } else {
             api.saveBp(this.props.user.upi, this.state.systolic, this.state.diastolic)
-                .then(()=>{
-                    this.props.navigation.navigate('Chat')
+                .then((response)=>{
+                    console.log("response", response)
+                    console.log("diagnosis", response.diagnosis)
+                    const diagnosis = response.diagnosis
+                    const message = this.determineMessage(diagnosis)
+                    Alert.alert(
+                        'BP Notification',
+                        message,
+                        [
+                          {text: 'OK', onPress: () => {
+                              console.log('OK Pressed')
+                              this.props.navigation.navigate('Chat')
+                            }},
+                        ],
+                        {cancelable: false},
+                      );
+                    
                 })
                 .catch(err => console.log(err))
         }

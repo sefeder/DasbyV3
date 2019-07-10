@@ -1,56 +1,52 @@
+
 import React, { Component } from 'react';
-import { connect } from "react-redux";
-import { storeUserInfo, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
+import Spinner from 'react-native-loading-spinner-overlay';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, AsyncStorage, Image, Dimensions, ImageBackground } from 'react-native';
 import * as Animatable from 'react-native-animatable';
-import api from '../utils/api';
 
-function mapDispatchToProps(dispatch) {
-    return {
-        storeUserInfo: info => dispatch(storeUserInfo(info)),
-        storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
-        storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
-    };
-}
-
-function mapStateToProps(reduxState) {
-    return {
-        user: reduxState.mainReducer.user,
-    };
-}
-
-class ConnectedLandingScreen extends Component {
-
-   
-    componentDidMount() {
-        this.props.navigation.navigate('LogInScreen')
-    }
+export default class LoadingScreen extends Component {
 
     render(){
-        return (
+        return(
+            // <Spinner
+            //     visible={true}
+            //     textContent={'Loading...'}
+            //     textStyle={{ color: 'rgba(91, 141, 249, 1)' }}
+            //     cancelable={false}
+            //     color={'#3377FF'}
+            //     // animation={'fade'}
+            //     overlayColor={'rgba(255, 255, 255, 1)'}
+            // />
             <KeyboardAvoidingView style={styles.app}>
                 <Image
                     source={require('../assets/qbkls.png')}
-                    style={{ width: '150%', height: '100%', opacity: 0.23, zIndex: -1, backgroundColor: '#810000', position: 'absolute'}}
+                    style={{ width: '150%', height: '100%', opacity: 0.23, zIndex: -1, backgroundColor: '#810000', position: 'absolute' }}
                 />
                 <Animatable.Text
                     animation="fadeInLeft"
-                    duration={2000}
-                    style={styles.splashText}
-                > 
+                    duration={1500}
+                    style={styles.dasbyText}
+                >
                     Dasby
                 </Animatable.Text>
                 <Animatable.Image
-                    duration={2000}
+                    duration={1500}
                     animation="fadeInRight"
                     source={require('../assets/dasby-no-backg.png')}
                     style={styles.image}
                 />
+                <Animatable.Text
+                    duration={1500}
+                    animation="fadeIn"
+                    style={styles.loadingText}
+                >
+                    Loading...
+                </Animatable.Text>
             </KeyboardAvoidingView>
         )
     }
-
 }
+
 const styles = StyleSheet.create({
     app: {
         display: 'flex',
@@ -60,19 +56,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#810000',
-        
+
 
     },
     image: {
         height: Dimensions.get('window').height * .33,
         width: Dimensions.get('window').width * .6,
     },
-    splashText: {
+    dasbyText: {
         color: 'black',
         // fontWeight: 'bold',
         fontSize: 70
     },
+    loadingText: {
+        color: 'black',
+        // fontWeight: 'bold',
+        fontSize: 30
+    },
 });
-
-const LandingScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedLandingScreen);
-export default LandingScreen;

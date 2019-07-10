@@ -23,18 +23,13 @@ class Result extends Component {
         let score = parseInt(severity)
         switch (true) {
             case (score < 50):
-                return 'rgba(156, 201, 241, 1)' //'rgba(118, 178, 236, 1)'
-                break;
+                return 'rgba(255, 255, 255, 1)' //'rgba(118, 178, 236, 1)'
             case (score >= 50 && score <= 65):
-                return 'rgba(90, 150, 240, 1)' //'rgba(78, 142, 204, 1)'
-                break;
+                return 'rgba(217, 255, 255, 1)' //'rgba(78, 142, 204, 1)'
             case (score > 65 && score <= 75):
-                return 'rgba(48, 114, 177, 1)'
-                break;
+                return 'rgba(153, 246, 255, 1)'
             case (score > 75):
-                return 'rgba(11, 90, 167, 1)'
-                break;
-            
+                return 'rgba(83, 178, 222, 1)'
             default:
                 break;
         }
@@ -54,17 +49,29 @@ class Result extends Component {
 
     render() {
         return (
-            <View>
+            <View style={{
+                marginTop: 10,
+                width: Dimensions.get('window').width,
+                backgroundColor: this.determineBackgroundColor(this.props.result.severity),
+                // borderBottomColor: 'black',
+                // borderBottomWidth: this.state.contentVisible ? 0 : .5,
+                borderRadius: 25,
+                paddingLeft: 10,
+                paddingRight: 10,
+                shadowColor: "#000000",
+                shadowOpacity: 0.8,
+                shadowRadius: 3,
+                shadowOffset: {
+                    height: 1,
+                    width: 1
+                }, 
+            }}
+            >
                 <TouchableHighlight
                     style={{
-                    marginTop: 5,
-                    height: Dimensions.get('window').height * .055,
-                    width: Dimensions.get('window').width,
-                    backgroundColor: this.determineBackgroundColor(this.props.result.severity),
-                    borderBottomColor: 'black',
-                    borderBottomWidth: this.state.contentVisible ? 0 : 2, 
+                        height: Dimensions.get('window').height * .055
                     }}
-                    underlayColor={this.determineBackgroundColor(this.props.result.severity)}
+                    underlayColor={'rgba(255, 255, 255, 0)'}
                     onPress={() => this.setState({ contentVisible: !this.state.contentVisible })}
                 >
                     <View style={{
@@ -102,12 +109,13 @@ class Result extends Component {
                 </TouchableHighlight>
                     {this.state.contentVisible &&
                     <Animatable.View style={{
-                        backgroundColor: this.determineBackgroundColor(this.props.result.severity),
+                        // backgroundColor: this.determineBackgroundColor(this.props.result.severity),
                         display: 'flex',
                         flexDirection: 'row',
                         alignItems: 'flex-start',
-                        borderBottomColor: 'black',
-                        borderBottomWidth: 2
+                        // borderBottomColor: 'black',
+                        // borderBottomWidth: 2
+                        borderRadius: 25
                         }}
                     >
                         <Text style={{
@@ -130,7 +138,8 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         // marginBottom: 10,
-        alignItems: 'center'
+        alignItems: 'center',
+        
     },
     // resultContent: {
     //     backgroundColor: this.determineBackgroundColor(this.props.result.severity),

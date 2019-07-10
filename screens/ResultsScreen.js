@@ -1,17 +1,31 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, ScrollView, FlatList, Dimensions, AsyncStorage} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons'
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { connect } from "react-redux";
+import { storeUserInfo } from "../redux/actions";
 import api from '../utils/api';
-import { VictoryBar, VictoryChart, VictoryGroup, VictoryLine, VictoryScatter, VictoryZoomContainer, VictoryVoronoiContainer, VictoryAxis, VictoryStack, VictoryArea } from 'victory-native';
 import MenuBar from '../components/MenuBar';
 import moment from 'moment';
 import 'moment-timezone';
 import Result from '../components/Result';
-import Svg from 'react-native-svg'
+import ResultsGraph from '../components/ResultsGraph';
+import SegmentedControlTab from 'react-native-segmented-control-tab';
+import Orientation from 'react-native-orientation';
 
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info)),
+    };
+}
 
+function mapStateToProps(reduxState) {
+    return {
+        user: reduxState.mainReducer.user,
+        selectedPatientUpi: reduxState.mainReducer.currentSelectedPatientUpi
+    };
+}
 
-    export default class ResultsScreen extends Component {
+class ConnectedResultsScreen extends Component {
         
     state = {
         results: null,
@@ -19,222 +33,114 @@ import Svg from 'react-native-svg'
         currentIndex: 0,
         currentPoints: [],
         selectedDatum: {},
-        lockedOut: false
+        lockedOut: false,
+        selectedIndex: 0,
+        currentDatum: {}
     }
 
     componentDidMount() {
         console.log("hit componentDidMount")
-        AsyncStorage.getItem('currentUserUpi', (err,result)=>{
-            if (err) console.log(err)
-            //below is only true if admin is currently logged in
-            if (result !== null) {
-                api.getResults(JSON.parse(result), "Depression")
-                    .then(results => {
-                        const dataArray = this.createDataArray(results)
-                        console.log('results from RS getResults: ', results)
-                        this.setState({ results, dataArray },
-                            () => AsyncStorage.setItem('surveyResults', JSON.stringify(this.state.results)))
-                    })
-            //below pertains to users being logged in
-            } else {
-                AsyncStorage.getItem('surveyResults', (err, result) => {
-                    if (err) console.log(err)
-                    this.setState({ results: JSON.parse(result) },
-                    () => {
-                        AsyncStorage.getItem('userInfo', (err, result) => {
-                            api.getResults(JSON.parse(result).user.upi, "Depression")
-                            .then(results => {
-                                const dataArray = this.createDataArray(results)
-                                console.log('results from RS getResults: ', results)
-                                this.setState({ results, dataArray },
-                                    () => AsyncStorage.setItem('surveyResults', JSON.stringify(this.state.results)))
-                            })
-                        })
-                    })
-                })
-            }
-        })  
+        Orientation.lockToLandscape;
+        this.adminOrUser();
     }
 
-    determineBackgroundColor = severity => {
-        let score = parseInt(severity)
-        switch (true) {
-            case (score < 50):
-                return 'rgba(156, 201, 241, 1)' //'rgba(118, 178, 236, 1)'
-                break;
-            case (score >= 50 && score <= 65):
-                return 'rgba(90, 150, 240, 1)' //'rgba(78, 142, 204, 1)'
-                break;
-            case (score > 65 && score <= 75):
-                return 'rgba(48, 114, 177, 1)'
-                break;
-            case (score > 75):
-                return 'rgba(11, 90, 167, 1)'
-                break;
-
-            default:
-                break;
+    adminOrUser = () => {
+        if (this.props.selectedPatientUpi !== undefined) {
+            //if admin is currently logged in
+            this.getAndSetResults(this.props.selectedPatientUpi)
+        } else {
+             //else user is logged in
+            this.getAndSetResults(this.props.user.upi)
         }
+        // AsyncStorage.getItem('adminSelectedPatientUpi', (err, result) => {
+        //     if (err) console.log(err)
+        //     //if admin is currently logged in
+        //     if (result !== null) {
+        //         this.getAndSetResults(JSON.parse(result))
+        //     //else user is logged in
+        //     } else {
+        //         AsyncStorage.getItem('userInfo', (err, result) => {
+        //             this.getAndSetResults(JSON.parse(result).user.upi)
+        //         })
+        //     }
+        // })  
     }
+
+    getAndSetResults = (patientUpi) => {
+        api.getResults(patientUpi, "Depression")
+            .then(results => {
+                const dataArray = this.createDataArray(results)
+                console.log('results from RS getResults: ', results)
+                this.setState({ results, dataArray })
+            })
+    }
+
+        determineBackgroundColor = severity => {
+            let score = parseInt(severity)
+            switch (true) {
+                case (score < 50):
+                    return 'rgba(255, 255, 255, 1)' //'rgba(118, 178, 236, 1)'
+                case (score >= 50 && score <= 65):
+                    return 'rgba(217, 255, 255, 1)' //'rgba(78, 142, 204, 1)'
+                case (score > 65 && score <= 75):
+                    return 'rgba(153, 246, 255, 1)'
+                case (score > 75):
+                    return 'rgba(83, 178, 222, 1)'
+                default:
+                    break;
+            }
+        }
 
     createDataArray = (results) => {
         const dataArray = results.slice(0).reverse().map((result, idx, array) => {
-            return { date: result.createdAt, severity: result.severity }
+            return { 
+                date: new Date(result.createdAt).getTime(), 
+                severity: result.severity }
         })
         return dataArray;
 
     }
 
-    handlePointTouch = (points, props) => {
-        if(this.state.lockedOut){return}
-        if(points.length <=0 ){return}
-        console.log("hitting handlePointTouch. 'points' is: ", points)
-        console.log("lockedOut:", this.state.lockedOut)
-        console.log("down here!")
-        let newIndex
-        if (points.length > 2 && points[0].eventKey === 1) {
-            newIndex = (this.state.results.length - 1)
-        } else if (points.length > 2 && points[0].eventKey === 0) {
-            newIndex = 0
-        } else {
-            newIndex = points[0].eventKey
-        }
+    handleIndexChange = (index) => {
         this.setState({
-            currentPoints: points,
-            currentIndex: newIndex
-        },
-            () => {
-                console.log('this.state.currentPoints: ', this.state.currentPoints)
-                console.log('props: ', props)
-                this.highlightPoint(this.state.dataArray, this.state.currentIndex)
-            })
-    }
-
-
-    highlightPoint = (data, highlightIndex) => {
-        console.log("hitting highlightPoint")
-        const newDataArray = data.map((point, idx, array) => {
-            if (idx === highlightIndex) {
-                return {
-                    date: point.date,
-                    severity: point.severity,
-                    size: 8,
-                    fill: 'blue'
-                }
-            }
-            else {
-                return {
-                    date: point.date,
-                    severity: point.severity,
-                    size: 3,
-                    fill: 'grey'
-                }
-            }
+            selectedIndex: index,
         })
-        this.setState({ dataArray: newDataArray })
+        if (index === 0){
+            Orientation.lockToLandscape;
+        }
+        else{
+            Orientation.lockToPortrait;
+        }
+    };
+
+    handlePointTouch = (datum)=>{
+        this.setState({currentDatum: datum})
     }
+    
 
     render() {
         return (
             <KeyboardAvoidingView style={styles.app}>
-                <View style={styles.container}>
-                    <VictoryChart
-                        style={{
-                            alignItems: 'stretch'
-                        }}
-                        containerComponent={
-                            <VictoryZoomContainer
-                            allowPan={true}
-                            allowZoom={false}
-                                zoomDomain={{ x: [this.state.dataArray.length - 5, this.state.dataArray.length+0.5]}}
-                            />
-                        }
-                    >
-                            <VictoryAxis
-                            independentAxis
-                            tickFormat={(t) => `${moment(t).format('MM/DD/YY')}`}
-                            style={{ 
-                                tickLabels: { 
-                                    angle: -38,
-                                    fontSize: 14,
-                                    verticalAnchor: 'start',
-                                    padding: 18
-                                }
-                            }}
-                            />
-                            <VictoryAxis
-                            dependentAxis
-                            label="Severity"
-                            style={{
-                                axisLabel: {
-                                    fontSize: 18,
-                                },
-                                tickLabels: {
-                                    padding: 3
-                                }
-                            }}
-                            />
-                            <VictoryBar
-                            name="bar"
-                            style={{
-                                data: {
-                                    fill: (d) => this.determineBackgroundColor(d.severity),
-                                    stroke: 'black'
-                                }
-                            }}
-                            // animate={{
-                            //     duration: 2000
-                            // }}
-                            events={[{
-                                target: 'data',
-                                childName:["bar"],
-                                eventHandlers: {
-                                    onPressIn: (event) => {
-                                        console.log('event: ', event)
-                                        return [
-                                            {
-                                                target: 'data',
-                                                eventKey: "all",
-                                                mutation: (props) => {
-                                                    return {style: {fill: 'green'}}
-                                                }
-                                            },
-                                            {
-                                                target: 'data',
-                                                mutation: (props) => {
-                                                    console.log('props: ', props)
-                                                    this.setState({selectedDatum: props.datum})
-                                                    const fill = props.style && props.style.fill;
-                                                    return fill === 'black' ? null : { style: { fill: 'black' } }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            }]}
-                            barWidth={30}
-                            alignment="middle"
-                            domain={{ x: [0, this.state.dataArray.length + 0.5]}} 
-                            // barRatio={0.8}
-                            // labels={this.state.results && this.state.results.map((result, idx) => {
-                            //     return `${result.severity}`
-                            // })}
-                            data={this.state.dataArray}
-                            labels={(d) => d.severity === 0 ? 0 : null}
-                            x="date"
-                            y="severity"
-                            />
-                        </VictoryChart>
-                    
-                </View>
-                <ScrollView style={{flex:1}}>
-                    { this.state.results && this.state.results.map((result, idx, resultArray) => {
-                        return(
-                            <Result key={idx} prevSeverity={resultArray[idx + 1] !== undefined ? resultArray[idx + 1].severity : null} result={result} date={result.createdAt}/>
-                        )
-                    })}
-                </ScrollView>
-                <MenuBar navigation={this.props.navigation} screen={'data'} />
+                <SegmentedControlTab
+                    values={['Chart', 'Table']}
+                    selectedIndex={this.state.selectedIndex}
+                    onTabPress={this.handleIndexChange}
+                    tabsContainerStyle={{height: 40}}
+                />
+                {this.state.selectedIndex === 0 ?
+                    <View>
+                        <ResultsGraph dataArray={this.state.dataArray} handlePointTouch={this.handlePointTouch}/>
+                        {this.state.currentDatum && <Text style={{fontSize: 30}}>{this.state.currentDatum.severity}</Text>}
+                    </View> 
+                :
+                    <ScrollView style={{flex:1, backgroundColor: 'white'}}>
+                        { this.state.results && this.state.results.map((result, idx, resultArray) => {
+                            return(
+                                <Result key={idx} prevSeverity={resultArray[idx + 1] !== undefined ? resultArray[idx + 1].severity : null} result={result} date={result.createdAt}/>
+                            )
+                        })}
+                    </ScrollView>
+                }
             </KeyboardAvoidingView>
         )
     }
@@ -249,7 +155,8 @@ const styles = StyleSheet.create({
         overflow: 'scroll',
         flexDirection: 'column',
         flex: 1,
-        justifyContent: 'center',
+        // justifyContent: 'space-between',
+        alignItems: 'center'
     },
     container: {
         flex: 1.2,
@@ -267,3 +174,6 @@ const styles = StyleSheet.create({
     }
 
 });
+
+const ResultsScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedResultsScreen);
+export default ResultsScreen;

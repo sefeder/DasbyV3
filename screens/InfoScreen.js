@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight, Dimensions, AsyncStorage, Image, WebView, ScrollView, Modal, Alert } from 'react-native';
 import MenuBar from '../components/MenuBar'
+import Icon from 'react-native-vector-icons/Ionicons';
+
 
 // import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -16,40 +18,20 @@ export default class InfoScreen extends Component {
     render() {
         return (
             <KeyboardAvoidingView style={styles.app}>
-                {/* <View style={{ marginTop: 22 }}>
-                    <Modal
-                        animationType="slide"
-                        transparent={false}
-                        visible={this.state.modalVisible}
-                        presentationStyle={'pageSheet'}
-                        onRequestClose={() => {
-                            Alert.alert('Modal has been closed.');
-                        }}
-                        style={{ height: Dimensions.get('window').height * .5}}>
-                        <View style={{ marginTop: 22 }}>
-                            <View>
-                                <Text>Hello World!</Text>
-
-                                <TouchableHighlight
-                                    onPress={() => {
-                                        this.setState({modalVisible: !this.state.modalVisible});
-                                    }}>
-                                    <Text>Hide Modal</Text>
-                                </TouchableHighlight>
-                            </View>
-                        </View>
-                    </Modal>
-                </View> */}
+                <Image
+                    source={require('../assets/qbkls.png')}
+                    style={{ width: '150%', height: '100%', opacity: 0.23, zIndex: -1, backgroundColor: '#810000', position: 'absolute' }}
+                />
                 <ScrollView>
                     <View style={styles.textView}>
                         <Text style={styles.text}>
-                            David Beiser, MD
+                            <Icon size={30} color='black' name='ios-person' />  David Beiser, MD
                         </Text>
                         <Text style={styles.text}>
-                            dbeiser@uchicago.edu
+                            <Icon size={30} color='black' name='ios-mail' />  dbeiser@uchicago.edu
                         </Text>
                         <Text selectable style={styles.text}>
-                            773-217-8020
+                            <Icon size={30} color='black' name='ios-phone-portrait' />  773-217-8020
                         </Text>
                     </View>
                     <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10, marginLeft: 5 }}>A message from Dr. Beiser:
@@ -61,7 +43,6 @@ export default class InfoScreen extends Component {
                         />
                     </View>
                 </ScrollView>
-                <MenuBar navigation={this.props.navigation} screen={'info'}/>
             </KeyboardAvoidingView>
         )
     }
@@ -76,7 +57,8 @@ const styles = StyleSheet.create({
         overflow: 'scroll',
         flexDirection: 'column',
         flex: 1,
-        justifyContent: 'flex-end'
+        justifyContent: 'flex-end',
+        backgroundColor: '#810000',
     },
     menu: {
         display: 'flex',
@@ -97,7 +79,7 @@ const styles = StyleSheet.create({
     webView: {
         flex: 1,
         width: Dimensions.get('window').width,
-        height: Dimensions.get('window').height*.42
+        height: Dimensions.get('window').height*.37
     },
      textView: {
         marginTop: 10,

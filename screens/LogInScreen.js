@@ -1,22 +1,55 @@
 import React, { Component } from 'react';
+import { connect } from "react-redux";
+import { storeUserInfo, storeTwilioToken, storeDasbyUpi } from "../redux/actions";
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, View, Button, Dimensions, TextInput, TouchableHighlight, TouchableOpacity, AsyncStorage} from 'react-native';
 import api from '../utils/api';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Spinner from 'react-native-loading-spinner-overlay';
+import PushNotifications from '../utils/notifications'
 
-export default class LogInScreen extends Component {
+function mapDispatchToProps(dispatch) {
+    return {
+        storeUserInfo: info => dispatch(storeUserInfo(info)),
+        storeDasbyUpi: dasbyUpi => dispatch(storeDasbyUpi(dasbyUpi)),
+        storeTwilioToken: twilioToken => dispatch(storeTwilioToken(twilioToken))
+    };
+}
+
+function mapStateToProps(reduxState) {
+    return {
+        user: reduxState.mainReducer.user,
+    };
+}
+
+class ConnectedLogInScreen extends Component {
 
     state = {
         emailInput: null,
         passwordInput: null,
         hiddenPass: true,
-        buttonLockout: false
+        buttonLockout: false,
+        spinnerVisible: false
     }
+
+    componentDidMount() {
+        if (this.props.user.upi) {
+            PushNotifications.configurePushNotifications(this.props.user.upi)
+            if (this.props.user.role === 'user') {
+                this.props.navigation.navigate('UserHomeScreen')
+            } else {
+                this.props.navigation.navigate('AdminSelectionScreen')
+            }
+        } else {
+            return;
+        }
+    }
+
     viewPass = () => {
         this.setState({hiddenPass: !this.state.hiddenPass})
     }
     submitLogIn = () => {
-        if (this.state.buttonLockout) {return;}
-        this.setState({buttonLockout: true})
+        console.log("submit button hit")
+        this.setState({ spinnerVisible: true})
         api.logIn({
             email: this.state.emailInput,
             password: this.state.passwordInput
@@ -24,24 +57,34 @@ export default class LogInScreen extends Component {
             .then(res => {
                 if (!res.status && res.message === "invalid email") {
                     console.log('that email is invalid')
-                    this.setState({emailInput: '', passwordInput: '', buttonLockout: false})
+                    this.setState({ emailInput: '', passwordInput: '', spinnerVisible: false})
                     return;
                 }
                 if (!res.status && res.message === "password does not match") {
                     console.log('that password does not match that email')
-                    this.setState({ emailInput: '', passwordInput: '', buttonLockout: false})
+                    this.setState({ emailInput: '', passwordInput: '', spinnerVisible: false})
                     return;
                 }
                 if (res.user.role === "user"){
-                    AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
-                        this.props.navigation.navigate('UserHomeScreen', {userInfo: res, newUser: false})
-                    })
+                    this.props.storeUserInfo({ ...res.user, newUser: false })
+                    api.getDasbyUpi()
+                        .then(dasbyInfo => {
+                            this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
+                        })
+                        .catch(err => console.log(err))
+                    this.setState({ spinnerVisible: false })
+                    this.props.navigation.navigate('UserHomeScreen')
                 }
                 if (res.user.role === "admin"){
                     console.log("succesfully loged in as admin!")
-                    AsyncStorage.setItem('userInfo', JSON.stringify(res), () => {
-                        this.props.navigation.navigate('AdminSelectionScreen', { adminInfo: res })
-                    })
+                    this.props.storeUserInfo(res.user)
+                    api.getDasbyUpi()
+                        .then(dasbyInfo => {
+                            this.props.storeDasbyUpi(dasbyInfo.dasby.upi)
+                        })
+                        .catch(err => console.log(err))
+                    this.setState({ spinnerVisible: false })
+                    this.props.navigation.navigate('AdminSelectionScreen')
                 }
             })
             .catch(err => console.log(err))
@@ -49,7 +92,17 @@ export default class LogInScreen extends Component {
 
     render() {
         return (
+            
             <SafeAreaView style={{ flex: 1 }}>
+                <Spinner
+                visible={this.state.spinnerVisible}
+                textContent={'Loading...'}
+                textStyle={{ color: 'white' }}
+                cancelable={false}
+                color={'white'}
+                animation={'fade'}
+                overlayColor={'rgba(12, 8, 8, .4)'}
+            />
                 <KeyboardAvoidingView enabled behavior="padding" style={styles.app} keyboardVerticalOffset={64}> 
                     <View style={styles.inputForm}>
                         <View>
@@ -183,3 +236,6 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     }
 });
+
+const LogInScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedLogInScreen);
+export default LogInScreen;

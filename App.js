@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, Button, AsyncStorage, Animated, Easing } from 'react-native';
-import { createStackNavigator } from 'react-navigation';
+import { createStackNavigator, createBottomTabNavigator, createAppContainer } from 'react-navigation';
+import Icon from 'react-native-vector-icons/Ionicons';
 import LandingScreen from './screens/LandingScreen.js';
 import SignUpScreen from './screens/SignUpScreen.js';
 import LogInScreen from './screens/LogInScreen.js';
@@ -10,7 +11,10 @@ import AdminChatScreen from './screens/AdminChatScreen.js';
 import SurveyScreen from './screens/SurveyScreen.js';
 import ResultsScreen from './screens/ResultsScreen.js';
 import InfoScreen from './screens/InfoScreen.js';
-import EmergenyButton from './components/EmergencyButton';
+import BpInputScreen from './screens/BpInputScreen.js';
+import EmergencyButton from './components/EmergencyButton';
+import MoreButton from './components/MoreButton';
+import pushNotifications from './utils/notifications';
 
 const RootStack = createStackNavigator(
   {
@@ -33,44 +37,148 @@ const RootStack = createStackNavigator(
         screen: LogInScreen,
         navigationOptions: ({ navigation }) => ({
           title: 'Log In',
-          headerLeft: null
+          headerLeft: null,
+          gesturesEnabled: false
         })
       },
     UserHomeScreen:
       {
-        screen: UserHomeScreen,
-        navigationOptions: ({ navigation }) => {
-          return {
-            headerTitle: 'User Home',
-            headerLeft: null,
-          };
-        }
+      screen: createBottomTabNavigator({
+        Chat: {
+          screen: UserHomeScreen,
+          navigationOptions: ({ navigation }) => {
+            return {
+              tabBarIcon: ({ focused, horizontal, tintColor }) => (
+                <Icon size={33} name='ios-chatboxes' color={tintColor} />
+              )
+            };
+          }
+        },
+        Data:
+        {
+          screen: ResultsScreen,
+          navigationOptions: ({ navigation }) => {
+            return {
+              tabBarIcon: ({ focused, horizontal, tintColor }) => (
+                <Icon size={33} name='md-pulse' color={tintColor}/>
+              )
+            };
+          }
+        },
+        Info:
+        {
+          screen: InfoScreen,
+          navigationOptions: ({ navigation }) => {
+            return {
+              tabBarIcon: ({ focused, horizontal, tintColor }) => (
+                <Icon size={33} name='ios-information-circle-outline' color={tintColor} />
+              )
+            };
+          }
+        },
       },
+        {
+          // order: ['HomePage', 'ProfilePage'],
+          tabBarOptions: {
+            activeTintColor: '#3377FF',
+            inactiveTintColor: '#808080',
+            // style: {
+            //   backgroundColor: 'white',
+            // }
+          },
+        },),
+      navigationOptions: ({ navigation }) => {
+        return {
+          headerTitle: 'Dashboard',
+          headerLeft: (
+            <EmergencyButton />
+          ),
+          gesturesEnabled: false,
+          headerRight: (
+            <MoreButton navigation={navigation} />
+          ),
+        };
+      }
+      },
+      
     AdminSelectionScreen:
       {
         screen: AdminSelectionScreen,
         navigationOptions: ({ navigation }) => {
           return {
-            headerTitle: 'Channel Selector',
+            headerTitle: 'Patient List',
             headerLeft: null,
             headerRight: (
-              <Button
-                onPress={() => {
-                  AsyncStorage.clear()
-                  navigation.navigate('LogInScreen')
-                }}
-                title="Log Out"
-              />
+              <MoreButton navigation={navigation}/>
             ),
+            gesturesEnabled: false,
           };
         }
       },
     AdminChatScreen:
       {
-        screen: AdminChatScreen,
+      screen: createBottomTabNavigator({
+        Data:
+        {
+          screen: ResultsScreen,
+          navigationOptions: ({ navigation }) => {
+            return {
+              tabBarIcon: ({ focused, horizontal, tintColor }) => (
+                <Icon size={33} name='md-pulse' color={tintColor} />
+              )
+            };
+          }
+        },
+          Chat: {
+            screen: AdminChatScreen,
+            navigationOptions: ({ navigation }) => {
+              return {
+                tabBarIcon: ({ focused, horizontal, tintColor }) => (
+                  <Icon size={33} name='ios-chatboxes' color={tintColor} />
+                )
+              };
+            }
+          },
+          Info:
+          {
+            screen: InfoScreen,
+            navigationOptions: ({ navigation }) => {
+              return {
+                tabBarIcon: ({ focused, horizontal, tintColor }) => (
+                  <Icon size={33} name='ios-information-circle-outline' color={tintColor} />
+                )
+              };
+            }
+          },
+        },
+          {
+            // order: ['HomePage', 'ProfilePage'],
+            tabBarOptions: {
+              activeTintColor: '#3377FF',
+              inactiveTintColor: '#808080',
+              // style: {
+              //   backgroundColor: 'white',
+              // }
+            },
+          },),
+      navigationOptions: ({ navigation }) => {
+        return {
+          headerTitle: 'Patient Dashboard',
+          headerRight: (
+            <MoreButton navigation={navigation}/>
+          ),
+        };
+      }
+      },
+    BpInputScreen:
+      {
+        screen: BpInputScreen,
         navigationOptions: ({ navigation }) => {
           return {
-            headerTitle: 'Admin Chat Home',
+            headerTitle: 'Blood Pressure',
+            headerRight: (
+              <EmergencyButton />
+            ),
           };
         }
       },
@@ -81,44 +189,27 @@ const RootStack = createStackNavigator(
           return {
             headerTitle: 'Survey',
             headerRight: (
-              <EmergenyButton />
+              <EmergencyButton />
             ),
           };
         }
       },
-    ResultsScreen:
-      {
-        screen: ResultsScreen,
-        navigationOptions: ({ navigation }) => {
-          return {
-            headerTitle: 'Results',
-          };
-        }
-      },
-    InfoScreen:
-      {
-        screen: InfoScreen,
-        navigationOptions: ({ navigation }) => {
-          return {
-            headerTitle: 'Information',
-          };
-        }
-      },
 
-    initialRouteName: "LandingScreen"
+    initialRouteName: "LogInScreen"
   },
   {transitionConfig : () => ({
     transitionSpec: {
-      duration: 0,
-      timing: Animated.timing,
-      easing: Easing.step0,
+      // duration: 0,
+      // timing: Animated.timing,
+      // easing: Easing.step0,
     },
-  }),
-}
+  })}
   
 )
 
 export default class App extends React.Component {
+  componentDidMount(){
+  }
   render() {
     return (
       <RootStack/>

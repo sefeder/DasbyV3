@@ -1,23 +1,34 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, StyleSheet, Text, View, Button, TouchableHighlight } from 'react-native';
 import api from '../utils/api';
+import twilio from '../utils/twilioUtil';
 
 export default class SurveyScreen extends Component {
 
     state = {
         upi: this.props.navigation.state.params.upi,
-        channelSid: this.props.navigation.state.params.channel.sid,
+        channelSid: '',
         currentQuestion: null,
         currentChoice: 0 
     }
 
     componentDidMount() {
-       
+
         api.getCatmhSurvey("dep", this.state.upi)
         .then(res => {
             console.log('should be first q: ', res)
             this.setState({currentQuestion: res})
         })
+
+        twilio.getTwilioToken(this.state.upi)
+        .then(twilio.createChatClient)
+        .then(chatClient => {
+            twilio.findChannel(chatClient, this.state.upi)
+            .then(channel => {
+                this.setState({channelSid: channel.sid})
+            })
+        })
+       
     }
 
     handleAnswerSubmit = (choice, currentQuestion) => {
@@ -66,7 +77,7 @@ export default class SurveyScreen extends Component {
             { this.state.currentQuestion &&
                 <View style={styles.questionAndAnswers}>
                     <Text style={styles.text}>
-                        {`${this.state.currentQuestion.questionNumber}) `}  
+                        {/* {`${this.state.currentQuestion.questionNumber}) `}   */}
                         {this.state.currentQuestion.questionDescription}
                     </Text>
                     <View>

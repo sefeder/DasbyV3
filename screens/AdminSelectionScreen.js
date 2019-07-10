@@ -1,20 +1,35 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View, Button, TextInput, TouchableHighlight, AsyncStorage, Dimensions } from 'react-native';
 import twilio from '../utils/twilioUtil';
+import { connect } from "react-redux";
+import { storeCurrentSelectedPatientUpi } from "../redux/actions";
 import { ChannelDescriptor } from 'twilio-chat/lib/channeldescriptor';
 import api from '../utils/api';
 import MenuBar from '../components/MenuBar';
+import { STORE_PATIENT_DATA } from '../redux/action-types';
 
-export default class AdminSelectionScreen extends Component {
+function mapDispatchToProps(dispatch) {
+    return {
+        storeCurrentSelectedPatientUpi: currentSelectedPatientUpi => dispatch(storeCurrentSelectedPatientUpi(currentSelectedPatientUpi)),
+    };
+}
+
+function mapStateToProps(reduxState) {
+    return {
+        user: reduxState.mainReducer.user,
+    };
+}
+
+class ConnectedAdminSelectionScreen extends Component {
 
     state = {
-        adminInfo: this.props.navigation.state.params.adminInfo.user,
+        // adminInfo: this.props.navigation.state.params.adminInfo.user,
         channels: [],
         userArray: []
     }
 
     componentDidMount() {
-        twilio.getTwilioToken(this.state.adminInfo.upi)
+        twilio.getTwilioToken(this.props.user.upi) //admin's upi
             .then(twilio.createChatClient)
             .then(chatClient => {
                 return twilio.getAllChannels(chatClient)
@@ -37,9 +52,9 @@ export default class AdminSelectionScreen extends Component {
     }
 
     channelButtonHandler = selectedChannel => {
-        AsyncStorage.setItem('currentUserUpi', JSON.stringify(selectedChannel.uniqueName), ()=>{
-            this.props.navigation.navigate('AdminChatScreen', { adminInfo: this.state.adminInfo, channelDescriptor: selectedChannel})
-        })
+        console.log("selectedChannel.uniqueName:", selectedChannel.uniqueName)
+        this.props.storeCurrentSelectedPatientUpi(selectedChannel.uniqueName)
+        this.props.navigation.navigate('AdminChatScreen', {channelDescriptor: selectedChannel})
     }
 
     channelFilterCriteria = (channel,idx,arr) => {
@@ -77,10 +92,10 @@ export default class AdminSelectionScreen extends Component {
             <ScrollView >
                 <View style={styles.app}>
                     <Text>
-                        Welcome, {this.state.adminInfo.first_name} {this.state.adminInfo.last_name}, To The Channel Selector
+                        Welcome {this.props.user.first_name},
                     </Text>
                     <Text>
-                        Please select a conversation to join
+                        Select a patient to view his or her data
                     </Text>
                     <View style={styles.chatList}>
 
@@ -154,3 +169,6 @@ const styles = StyleSheet.create({
         overflow: 'scroll'
     }
 })
+
+const AdminSelectionScreen = connect(mapStateToProps, mapDispatchToProps)(ConnectedAdminSelectionScreen);
+export default AdminSelectionScreen;

@@ -18,7 +18,7 @@
   "dependencies": {
     "chance": "^1.0.16",
     "events": "^3.0.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "metro-react-native-babel-preset": "^0.45.0",
     "moment": "^2.22.2",
     "moment-timezone": "^0.5.23",
